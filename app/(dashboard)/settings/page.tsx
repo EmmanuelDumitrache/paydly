@@ -1,0 +1,258 @@
+import { differenceInCalendarDays, format } from 'date-fns';
+import Link from 'next/link';
+
+import { updateAccountProfile, updateReminderSchedule } from './actions';
+import { createClient } from '@/lib/supabase/server';
+
+export default async function SettingsPage() {
+  const supabase = createClient();
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .maybeSingle();
+
+  const { data: reminderSettings } = await supabase
+    .from('reminder_settings')
+    .select('*')
+    .maybeSingle();
+
+  const connectedToXero = Boolean(profile?.xero_tenant_id);
+  const subscriptionStatus = profile?.subscription_status ?? 'trialing';
+  const trialEndsAt = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+  const daysLeft = trialEndsAt ? differenceInCalendarDays(trialEndsAt, new Date()) : null;
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
+        <p className="text-sm text-slate-500">Manage your reminders, Xero connection, and billing details.</p>
+      </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Xero connection</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {connectedToXero
+                ? 'You are connected to Xero. Reminders will continue to run every day.'
+                : 'Connect Xero to sync invoices and automate reminders.'}
+            </p>
+            {connectedToXero ? (
+              <p className="mt-2 text-xs text-slate-400">
+                Tenant ID: {profile?.xero_tenant_id}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex gap-3">
+            {connectedToXero ? (
+              <>
+                <form action="/api/xero/sync" method="post">
+                  <button
+                    type="submit"
+                    className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-500 hover:text-indigo-600"
+                  >
+                    Sync now
+                  </button>
+                </form>
+                <form action="/api/xero/disconnect" method="post">
+                  <button
+                    type="submit"
+                    className="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+                  >
+                    Disconnect
+                  </button>
+                </form>
+              </>
+            ) : (
+              <form action="/api/xero/connect" method="post">
+                <button
+                  type="submit"
+                  className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+                >
+                  Connect Xero
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Reminder schedule</h2>
+            <p className="mt-1 text-sm text-slate-500">Control when Paydly sends reminders for overdue invoices.</p>
+          </div>
+        </div>
+        <form action={updateReminderSchedule} className="mt-6 space-y-4">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-indigo-200">
+            <input
+              type="checkbox"
+              name="day_7_enabled"
+              defaultChecked={reminderSettings?.day_7_enabled ?? true}
+              className="mt-1 h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-slate-900">7-day reminder</span>
+              <span className="text-sm text-slate-500">
+                A friendly reminder sent the first week an invoice is overdue.
+              </span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-indigo-200">
+            <input
+              type="checkbox"
+              name="day_14_enabled"
+              defaultChecked={reminderSettings?.day_14_enabled ?? true}
+              className="mt-1 h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-slate-900">14-day reminder</span>
+              <span className="text-sm text-slate-500">
+                A firmer follow-up for invoices that remain unpaid after two weeks.
+              </span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-indigo-200">
+            <input
+              type="checkbox"
+              name="day_21_enabled"
+              defaultChecked={reminderSettings?.day_21_enabled ?? true}
+              className="mt-1 h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-slate-900">21-day reminder</span>
+              <span className="text-sm text-slate-500">
+                Final notice to ensure clients settle outstanding invoices.
+              </span>
+            </span>
+          </label>
+          <button
+            type="submit"
+            className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+          >
+            Save schedule
+          </button>
+        </form>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Email templates</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Custom templates are coming soon. For now we’ll use the Paydly defaults.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-400"
+            disabled
+          >
+            Coming soon
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-slate-900">Account settings</h2>
+        <form action={updateAccountProfile} className="mt-6 grid gap-4 sm:max-w-lg">
+          <div className="space-y-1">
+            <label htmlFor="email" className="text-sm font-medium text-slate-600">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              defaultValue={profile?.email ?? ''}
+              disabled
+              className="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500"
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="full_name" className="text-sm font-medium text-slate-600">
+              Full name
+            </label>
+            <input
+              id="full_name"
+              name="full_name"
+              defaultValue={profile?.full_name ?? ''}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="Jane Smith"
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="company_name" className="text-sm font-medium text-slate-600">
+              Company name
+            </label>
+            <input
+              id="company_name"
+              name="company_name"
+              defaultValue={profile?.company_name ?? ''}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="ABC Consulting"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-fit rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+          >
+            Save changes
+          </button>
+        </form>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Billing</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {subscriptionStatus === 'active'
+                ? 'You’re on the Paydly Pro plan.'
+                : subscriptionStatus === 'trialing'
+                ? daysLeft !== null && daysLeft > 0
+                  ? `Trialing — ${daysLeft} days left.`
+                  : 'Trialing — ends soon.'
+                : 'Subscription status: ' + subscriptionStatus}
+            </p>
+            {trialEndsAt ? (
+              <p className="mt-1 text-xs text-slate-400">Trial ends {format(trialEndsAt, 'd MMM yyyy')}</p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {subscriptionStatus === 'active' ? (
+              <>
+                <form action="/api/billing/portal" method="post">
+                  <button
+                    type="submit"
+                    className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+                  >
+                    Manage subscription
+                  </button>
+                </form>
+                <Link
+                  href="/billing"
+                  className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-500 hover:text-indigo-600"
+                >
+                  View billing history
+                </Link>
+              </>
+            ) : (
+              <form action="/api/stripe/checkout" method="post">
+                <button
+                  type="submit"
+                  className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+                >
+                  Upgrade now
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+

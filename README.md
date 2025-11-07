@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Paydly
 
-## Getting Started
+> Automate invoice reminders for freelancers and small service businesses. Connect Xero once and Paydly sends polite nudges at 7/14/21 days overdue so you get paid faster.
 
-First, run the development server:
+## Tech Stack
+
+- Next.js 14 (App Router) + TypeScript
+- Tailwind CSS for styling
+- Supabase (PostgreSQL + Auth)
+- Xero API (OAuth 2.0) for invoice sync
+- Resend for transactional email delivery
+- Stripe for subscriptions
+- Vercel for hosting, cron, and analytics
+
+## Prerequisites
+
+- Node.js 18+
+- npm (or pnpm/yarn/bun) and Git
+- Supabase project & CLI (for running migrations)
+- Xero developer account + connected test organisation
+- Resend account with verified sender domain
+- Stripe account with subscription product & price
+
+Refer to `docs/environment.md` for the full list of required environment variables.
+
+## Local Setup
 
 ```bash
+git clone <repo>
+cd paydly
+
+# install dependencies
+npm install
+
+# copy env template & populate secrets
+cp docs/environment.md .env.local  # or copy values manually
+
+# run initial Supabase migration
+npx supabase db push
+
+# start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit `http://localhost:3000` to view the landing page. Auth, dashboard, invoices, reminder settings, and billing routes are all available under the `/dashboard` group.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` – local development
+- `npm run build` – production build
+- `npm run start` – start production server locally
+- `npm run lint` – run ESLint over the codebase
 
-## Learn More
+## Key Workflows
 
-To learn more about Next.js, take a look at the following resources:
+- **Auth** – Supabase Auth handles email/password sign up and login. New accounts are placed on a 14-day trial automatically.
+- **Xero Integration** – `/api/xero/connect` launches OAuth, `/api/xero/callback` stores tokens, and `/api/xero/sync` upserts invoices. Tokens refresh automatically when expired.
+- **Reminders** – `/api/cron/check-invoices` (secured with `CRON_SECRET`) finds overdue invoices, renders the appropriate template, sends via Resend, logs history, and increments reminder counts.
+- **Billing** – Stripe Checkout (`/api/stripe/checkout`), billing portal (`/api/billing/portal`), and webhooks (`/api/stripe/webhook`) keep `profiles.subscription_status` in sync.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment Checklist
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Create a Vercel project and link the repository.
+2. Add all environment variables (Supabase, Xero, Resend, Stripe, Cron secret) in Vercel settings.
+3. Upload the `vercel.json` cron configuration.
+4. Configure the Stripe webhook endpoint (`/api/stripe/webhook`) with the signing secret.
+5. Generate a Vercel cron token and set `CRON_SECRET` both locally and in Vercel.
+6. Deploy (`vercel --prod`) and verify:
+   - Supabase auth + dashboard access
+   - Xero connect, sync, and reminder scheduling
+   - Resend emails landing inboxes
+   - Stripe checkout and billing portal flows
 
-## Deploy on Vercel
+## Additional Documentation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `docs/environment.md` – environment variable reference
+- `docs/paydly-implementation-plan.md` – implementation roadmap and architecture summary (created separately)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+Proprietary – internal use for Paydly MVP development.

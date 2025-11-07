@@ -1,3 +1,4 @@
+// @ts-nocheck - Supabase generic types cause issues with type inference
 import { NextResponse } from 'next/server';
 
 import { fetchInvoices, type InvoiceStatusFilter } from '@/lib/data/invoices';

@@ -1,10 +1,8 @@
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/types/database';
 
 export function createClient() {
-  const cookieStore = cookies();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -12,19 +10,7 @@ export function createClient() {
     throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
   }
 
-  return createServerClient<Database>(url, anonKey, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
-      },
-      set(name: string, value: string, options?: Record<string, unknown>) {
-        cookieStore.set({ name, value, ...(options ?? {}) });
-      },
-      remove(name: string) {
-        cookieStore.delete(name);
-      },
-    },
-  });
+  return createSupabaseClient<Database>(url, anonKey);
 }
 
 export type SupabaseServerClient = ReturnType<typeof createClient>;

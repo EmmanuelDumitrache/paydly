@@ -21,7 +21,7 @@
     "resend": "^3.0.0",
     "stripe": "^14.9.0",
     "tailwind-merge": "^2.1.0",
-    "xero-node": "^4.39.1"
+    "xero-node": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",

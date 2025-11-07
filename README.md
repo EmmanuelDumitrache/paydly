@@ -26,23 +26,51 @@ Refer to `docs/environment.md` for the full list of required environment variabl
 ## Local Setup
 
 ```bash
-git clone <repo>
-cd paydly
-
 # install dependencies
 npm install
 
-# copy env template & populate secrets
-cp docs/environment.md .env.local  # or copy values manually
+# Create .env.local from template
+# Copy the environment variables from docs/environment.md to .env.local
+# At minimum, you need these Supabase credentials to start:
+# NEXT_PUBLIC_SUPABASE_URL=your_url
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+# SUPABASE_SERVICE_ROLE_KEY=your_service_key
 
-# run initial Supabase migration
-npx supabase db push
+# Apply database migration to Supabase
+# Option 1: Via Supabase Dashboard (recommended for first time)
+#   1. Go to https://app.supabase.com/project/_/sql/new
+#   2. Copy the contents of supabase/migrations/001_initial_schema.sql
+#   3. Paste and run the SQL
+#
+# Option 2: Via Supabase CLI
+#   npx supabase db push
 
 # start dev server
 npm run dev
 ```
 
-Visit `http://localhost:3000` to view the landing page. Auth, dashboard, invoices, reminder settings, and billing routes are all available under the `/dashboard` group.
+Visit `http://localhost:3000` to view the landing page.
+
+### 🚀 Quick Start (Without Supabase Setup)
+
+The app currently uses **mock data** for development, so you can run it immediately without setting up Supabase:
+
+```bash
+npm install
+npm run dev
+```
+
+The landing page, dashboard, invoices page, and settings will all work with sample data. When you're ready to connect real data, follow the Supabase setup steps above.
+
+### After Database Setup
+
+Once you've applied the migration and configured `.env.local`, uncomment the real Supabase code in:
+- `app/(dashboard)/dashboard/page.tsx`
+- `lib/data/invoices.ts`
+- `app/(dashboard)/settings/page.tsx`
+- `app/(dashboard)/settings/actions.ts`
+
+Look for comments marked `/* Real Supabase implementation - uncomment when database is ready */`
 
 ## Available Scripts
 

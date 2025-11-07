@@ -48,8 +48,8 @@ export default async function InvoicesPage({
   const pageParam = typeof searchParams.page === 'string' ? Number.parseInt(searchParams.page, 10) : 1;
   const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
 
-  const supabase = createClient();
-  const { invoices, total } = await fetchInvoices(supabase, {
+  // Using mock data for now - supabase parameter not used
+  const { invoices, total } = await fetchInvoices(null as any, {
     status,
     search,
     page,

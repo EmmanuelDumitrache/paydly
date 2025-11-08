@@ -65,27 +65,40 @@ export async function POST(request: Request) {
     const invoices = await fetchXeroInvoices(accessToken, profile.xero_tenant_id);
 
     if (!invoices.length) {
-      return NextResponse.json({ synced: 0 });
+      return NextResponse.json({ synced: 0, message: 'No unpaid invoices found in Xero' });
     }
 
     const rows = invoices
-      .filter((invoice) => invoice.Status !== 'PAID' && invoice.AmountDue > 0)
-      .map((invoice) => ({
-        user_id: user.id,
-        xero_invoice_id: invoice.InvoiceID,
-        invoice_number: invoice.InvoiceNumber,
-        contact_name: invoice.Contact.Name,
-        contact_email: invoice.Contact.EmailAddress ?? null,
-        amount_due: invoice.AmountDue,
-        total_amount: invoice.Total,
-        currency_code: invoice.CurrencyCode,
-        due_date: invoice.DueDate,
-        status: invoice.Status,
-        updated_at: new Date().toISOString(),
-      }));
+      .filter((invoice) => {
+        // Filter out paid invoices and those with no amount due
+        return invoice.Status !== 'PAID' && invoice.AmountDue > 0;
+      })
+      .map((invoice) => {
+        // Safely parse the due date
+        const dueDate = invoice.DueDate ? 
+          new Date(invoice.DueDate).toISOString().split('T')[0] : 
+          new Date().toISOString().split('T')[0];
+
+        return {
+          user_id: user.id,
+          xero_invoice_id: invoice.InvoiceID,
+          invoice_number: invoice.InvoiceNumber || 'N/A',
+          contact_name: invoice.Contact?.Name || 'Unknown',
+          contact_email: invoice.Contact?.EmailAddress || null,
+          amount_due: Number(invoice.AmountDue) || 0,
+          total_amount: Number(invoice.Total) || 0,
+          currency_code: invoice.CurrencyCode || 'AUD',
+          due_date: dueDate,
+          status: invoice.Status,
+          updated_at: new Date().toISOString(),
+        };
+      });
 
     if (!rows.length) {
-      return NextResponse.json({ synced: 0 });
+      return NextResponse.json({ 
+        synced: 0, 
+        message: 'All invoices are paid or have no amount due' 
+      });
     }
 
     const { error: upsertError } = await supabase
@@ -93,11 +106,16 @@ export async function POST(request: Request) {
       .upsert(rows, { onConflict: 'user_id,xero_invoice_id' });
 
     if (upsertError) {
+      console.error('Supabase upsert error:', upsertError);
       throw upsertError;
     }
 
-    return NextResponse.json({ synced: rows.length });
+    return NextResponse.json({ 
+      synced: rows.length,
+      message: `Successfully synced ${rows.length} invoice${rows.length === 1 ? '' : 's'}`
+    });
   } catch (syncError) {
+    console.error('Sync error details:', syncError);
     const message = syncError instanceof Error ? syncError.message : 'Failed to sync invoices';
     return NextResponse.json({ error: message }, { status: 500 });
   }

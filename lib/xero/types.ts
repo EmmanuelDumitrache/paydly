@@ -25,10 +25,10 @@ export interface XeroInvoice {
   InvoiceID: string;
   InvoiceNumber: string;
   Contact: XeroInvoiceContact;
-  Status: 'DRAFT' | 'SUBMITTED' | 'AUTHORISED' | 'PAID' | 'VOIDED';
-  DueDate: string;
+  Status: 'DRAFT' | 'SUBMITTED' | 'DELETED' | 'AUTHORISED' | 'PAID' | 'VOIDED';
+  DueDate?: string;
   AmountDue: number;
-  CurrencyCode: string;
+  CurrencyCode?: string;
   Total: number;
 }
 

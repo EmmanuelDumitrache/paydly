@@ -111,9 +111,11 @@ export async function fetchXeroInvoices(
   accessToken: string,
   tenantId: string
 ): Promise<XeroInvoice[]> {
+  // Fetch all invoices that have an amount due (not fully paid)
+  // Include AUTHORISED and SUBMITTED statuses
   const params = new URLSearchParams({
-    where: 'Status=="AUTHORISED"&&AmountDue>0',
-    order: 'DueDate ASC',
+    where: 'Status!="PAID"&&Status!="VOIDED"&&AmountDue>0',
+    order: 'DueDate DESC',
   });
 
   const response = await fetch(`${API_BASE}/Invoices?${params.toString()}`, {
@@ -125,7 +127,9 @@ export async function fetchXeroInvoices(
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch invoices from Xero');
+    const errorText = await response.text();
+    console.error('Xero API error:', response.status, errorText);
+    throw new Error(`Failed to fetch invoices from Xero: ${response.status} ${response.statusText}`);
   }
 
   const json = await response.json();

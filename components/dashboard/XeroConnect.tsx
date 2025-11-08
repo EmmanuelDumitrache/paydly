@@ -21,12 +21,14 @@ export function XeroConnect({ connected, lastSyncedAt }: XeroConnectProps) {
         </div>
         <div className="flex gap-3">
           {connected ? (
-            <button
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-indigo-500 hover:text-indigo-600"
-              type="button"
-            >
-              Sync now
-            </button>
+            <form action="/api/xero/sync" method="post">
+              <button
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-indigo-500 hover:text-indigo-600"
+                type="submit"
+              >
+                Sync now
+              </button>
+            </form>
           ) : (
             <form action="/api/xero/connect" method="post">
               <button

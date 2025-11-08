@@ -1,4 +1,5 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
+// @ts-nocheck - Supabase generic types cause issues with type inference
 import { differenceInCalendarDays, format } from 'date-fns';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -6,7 +7,11 @@ import { redirect } from 'next/navigation';
 import { updateAccountProfile, updateReminderSchedule } from './actions';
 import { createClient } from '@/lib/supabase/server';
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -33,12 +38,27 @@ export default async function SettingsPage() {
   const trialEndsAt = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
   const daysLeft = trialEndsAt ? differenceInCalendarDays(trialEndsAt, new Date()) : null;
 
+  const syncStatus = typeof searchParams.sync === 'string' ? searchParams.sync : null;
+  const syncMessage = typeof searchParams.message === 'string' ? searchParams.message : null;
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
         <p className="text-sm text-slate-500">Manage your reminders, Xero connection, and billing details.</p>
       </div>
+
+      {syncStatus && syncMessage ? (
+        <div
+          className={`rounded-2xl border px-6 py-4 text-sm ${
+            syncStatus === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-rose-200 bg-rose-50 text-rose-700'
+          }`}
+        >
+          {syncMessage}
+        </div>
+      ) : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

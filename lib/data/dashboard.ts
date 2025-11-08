@@ -56,6 +56,9 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
   const today = formatISO(new Date(), { representation: 'date' });
   const monthStart = formatISO(startOfMonth(new Date()), { representation: 'date' });
 
+  console.log('[Dashboard] Today:', today);
+  console.log('[Dashboard] User ID:', userId);
+
   const { data: overdueRows, count: overdueCount } = await supabase
     .from('invoices')
     .select('amount_due')
@@ -63,10 +66,26 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     .neq('status', 'PAID')
     .lt('due_date', today);
 
+  console.log('[Dashboard] Overdue count:', overdueCount);
+
   const totalOverdueAmount = (overdueRows ?? []).reduce(
     (sum, row) => sum + parseCurrency(row.amount_due),
     0
   );
+
+  // First, get ALL invoices to see what we have
+  const { data: allInvoicesRows } = await supabase
+    .from('invoices')
+    .select('*')
+    .eq('user_id', userId);
+
+  console.log('[Dashboard] Total invoices:', allInvoicesRows?.length);
+  console.log('[Dashboard] All invoices:', allInvoicesRows?.map(inv => ({
+    number: inv.invoice_number,
+    due_date: inv.due_date,
+    status: inv.status,
+    is_overdue: inv.due_date < today
+  })));
 
   const { data: invoicesRows } = await supabase
     .from('invoices')
@@ -76,6 +95,8 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     .lt('due_date', today)
     .order('due_date', { ascending: true })
     .limit(10);
+
+  console.log('[Dashboard] Filtered overdue invoices:', invoicesRows?.length);
 
   const invoices: Invoice[] = (invoicesRows ?? []).map((invoice) => {
     const daysOverdue = Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0);

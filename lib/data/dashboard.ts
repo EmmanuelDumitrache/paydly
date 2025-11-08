@@ -72,14 +72,13 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     .from('invoices')
     .select('*')
     .eq('user_id', userId)
-    .order('due_date', { ascending: false })
+    .neq('status', 'PAID')
+    .lt('due_date', today)
+    .order('due_date', { ascending: true })
     .limit(10);
 
   const invoices: Invoice[] = (invoicesRows ?? []).map((invoice) => {
-    const daysOverdue =
-      invoice.status !== 'PAID'
-        ? Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0)
-        : 0;
+    const daysOverdue = Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0);
 
     return {
       ...invoice,

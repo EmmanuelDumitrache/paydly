@@ -155,15 +155,33 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     const currentType = nextReminderType(daysOverdue, invoice.reminder_count ?? 0, schedule);
     const tomorrowType = nextReminderType(daysOverdue + 1, invoice.reminder_count ?? 0, schedule);
 
-    if (!tomorrowType || currentType) continue;
     if (alreadySentToday(invoice.last_reminder_sent_at ?? null)) continue;
+
+    const now = new Date();
+    now.setHours(9, 0, 0, 0);
+
+    if (currentType) {
+      upcomingReminders.push({
+        id: invoice.id,
+        invoiceNumber: invoice.invoice_number,
+        clientName: invoice.contact_name,
+        reminderType: currentType,
+        scheduledFor: format(now, 'd MMM, h:mm a'),
+      });
+      continue;
+    }
+
+    if (!tomorrowType) continue;
+
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
     upcomingReminders.push({
       id: invoice.id,
       invoiceNumber: invoice.invoice_number,
       clientName: invoice.contact_name,
       reminderType: tomorrowType,
-      scheduledFor: format(new Date(Date.now() + 24 * 60 * 60 * 1000), 'd MMM, h:mm a'),
+      scheduledFor: format(tomorrow, 'd MMM, h:mm a'),
     });
   }
 

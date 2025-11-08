@@ -53,50 +53,34 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     };
   }
 
-  const today = formatISO(new Date(), { representation: 'date' });
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayISO = formatISO(today, { representation: 'date' });
   const monthStart = formatISO(startOfMonth(new Date()), { representation: 'date' });
 
-  console.log('[Dashboard] Today:', today);
-  console.log('[Dashboard] User ID:', userId);
-
-  const { data: overdueRows, count: overdueCount } = await supabase
+  // Fetch all unpaid invoices and filter in code for more reliable overdue detection
+  const { data: allInvoicesRows } = await supabase
     .from('invoices')
-    .select('amount_due')
+    .select('*')
     .eq('user_id', userId)
     .neq('status', 'PAID')
-    .lt('due_date', today);
+    .order('due_date', { ascending: true });
 
-  console.log('[Dashboard] Overdue count:', overdueCount);
+  // Filter overdue invoices in code for accurate date comparison
+  const overdueInvoicesData = (allInvoicesRows ?? []).filter((invoice) => {
+    const dueDate = new Date(invoice.due_date);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  });
 
-  const totalOverdueAmount = (overdueRows ?? []).reduce(
+  const overdueCount = overdueInvoicesData.length;
+  const totalOverdueAmount = overdueInvoicesData.reduce(
     (sum, row) => sum + parseCurrency(row.amount_due),
     0
   );
 
-  // First, get ALL invoices to see what we have
-  const { data: allInvoicesRows } = await supabase
-    .from('invoices')
-    .select('*')
-    .eq('user_id', userId);
-
-  console.log('[Dashboard] Total invoices:', allInvoicesRows?.length);
-  console.log('[Dashboard] All invoices:', allInvoicesRows?.map(inv => ({
-    number: inv.invoice_number,
-    due_date: inv.due_date,
-    status: inv.status,
-    is_overdue: inv.due_date < today
-  })));
-
-  const { data: invoicesRows } = await supabase
-    .from('invoices')
-    .select('*')
-    .eq('user_id', userId)
-    .neq('status', 'PAID')
-    .lt('due_date', today)
-    .order('due_date', { ascending: true })
-    .limit(10);
-
-  console.log('[Dashboard] Filtered overdue invoices:', invoicesRows?.length);
+  // Get top 10 most overdue invoices
+  const invoicesRows = overdueInvoicesData.slice(0, 10);
 
   const invoices: Invoice[] = (invoicesRows ?? []).map((invoice) => {
     const daysOverdue = Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0);
@@ -111,7 +95,7 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
 
   const { count: remindersCount } = await supabase
     .from('reminder_logs')
-    .select('id', { count: 'exact' })
+    .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
     .gte('sent_at', monthStart);
 
@@ -151,17 +135,10 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     day_21_enabled: settings?.day_21_enabled ?? true,
   };
 
-  const { data: potentialReminders } = await supabase
-    .from('invoices')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('reminders_paused', false)
-    .neq('status', 'PAID')
-    .lt('due_date', today);
-
+  // Use the same overdueInvoicesData for upcoming reminders
   const upcomingReminders: UpcomingReminder[] = [];
 
-  for (const invoice of potentialReminders ?? []) {
+  for (const invoice of overdueInvoicesData.filter(inv => !inv.reminders_paused)) {
     const daysOverdue = Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0);
     const currentType = nextReminderType(daysOverdue, invoice.reminder_count ?? 0, schedule);
     const tomorrowType = nextReminderType(daysOverdue + 1, invoice.reminder_count ?? 0, schedule);

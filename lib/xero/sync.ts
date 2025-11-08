@@ -12,6 +12,8 @@ export async function syncXeroInvoicesForUser(
   supabase: SupabaseServerClient,
   userId: string
 ): Promise<{ synced: number; message: string }> {
+  console.info('[xero-sync] Starting invoice sync', { userId });
+
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('*')
@@ -53,6 +55,11 @@ export async function syncXeroInvoicesForUser(
 
   const invoices = await fetchXeroInvoices(accessToken, profile.xero_tenant_id);
 
+  console.info('[xero-sync] Invoices fetched from Xero', {
+    userId,
+    count: invoices.length,
+  });
+
   if (!invoices.length) {
     return {
       synced: 0,
@@ -63,9 +70,41 @@ export async function syncXeroInvoicesForUser(
   const rows = invoices
     .filter((invoice) => invoice.Status !== 'PAID' && invoice.AmountDue > 0)
     .map((invoice) => {
-      const dueDate = invoice.DueDate
-        ? new Date(invoice.DueDate).toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0];
+      const rawDueDate = invoice.DueDate ?? null;
+      let dueDateIso = new Date().toISOString().split('T')[0];
+
+      if (rawDueDate) {
+        const parsed = new Date(rawDueDate);
+        if (Number.isNaN(parsed.valueOf())) {
+          console.warn('[xero-sync] Invalid due date encountered', {
+            userId,
+            invoiceId: invoice.InvoiceID,
+            invoiceNumber: invoice.InvoiceNumber,
+            rawDueDate,
+          });
+        } else {
+          dueDateIso = parsed.toISOString().split('T')[0];
+        }
+      } else {
+        console.warn('[xero-sync] Missing due date, using fallback', {
+          userId,
+          invoiceId: invoice.InvoiceID,
+          invoiceNumber: invoice.InvoiceNumber,
+        });
+      }
+
+      const amountDue = Number(invoice.AmountDue);
+      const totalAmount = Number(invoice.Total);
+
+      if (!Number.isFinite(amountDue) || !Number.isFinite(totalAmount)) {
+        console.warn('[xero-sync] Non-numeric amount detected', {
+          userId,
+          invoiceId: invoice.InvoiceID,
+          invoiceNumber: invoice.InvoiceNumber,
+          amountDue: invoice.AmountDue,
+          totalAmount: invoice.Total,
+        });
+      }
 
       return {
         user_id: userId,
@@ -73,14 +112,19 @@ export async function syncXeroInvoicesForUser(
         invoice_number: invoice.InvoiceNumber || 'N/A',
         contact_name: invoice.Contact?.Name || 'Unknown',
         contact_email: invoice.Contact?.EmailAddress || null,
-        amount_due: Number(invoice.AmountDue) || 0,
-        total_amount: Number(invoice.Total) || 0,
+        amount_due: Number.isFinite(amountDue) ? amountDue : 0,
+        total_amount: Number.isFinite(totalAmount) ? totalAmount : 0,
         currency_code: invoice.CurrencyCode || 'AUD',
-        due_date: dueDate,
+        due_date: dueDateIso,
         status: invoice.Status,
         updated_at: new Date().toISOString(),
       };
     });
+
+  console.info('[xero-sync] Prepared invoice rows for upsert', {
+    userId,
+    rows: rows.length,
+  });
 
   if (!rows.length) {
     return {
@@ -94,6 +138,10 @@ export async function syncXeroInvoicesForUser(
     .upsert(rows, { onConflict: 'user_id,xero_invoice_id' });
 
   if (upsertError) {
+    console.error('[xero-sync] Supabase upsert error', {
+      userId,
+      error: upsertError,
+    });
     throw upsertError;
   }
 
@@ -101,6 +149,11 @@ export async function syncXeroInvoicesForUser(
     .from('profiles')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', userId);
+
+  console.info('[xero-sync] Sync completed successfully', {
+    userId,
+    synced: rows.length,
+  });
 
   return {
     synced: rows.length,

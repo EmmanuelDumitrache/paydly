@@ -1,10 +1,9 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { differenceInCalendarDays, format } from 'date-fns';
 import Link from 'next/link';
+import { Clock, AlertCircle, ArrowRight } from 'lucide-react';
 
-import { InvoiceList } from '@/components/dashboard/InvoiceList';
 import { Stats } from '@/components/dashboard/Stats';
-import { UpcomingReminders } from '@/components/dashboard/UpcomingReminders';
 import { XeroConnect } from '@/components/dashboard/XeroConnect';
 import { getDashboardData } from '@/lib/data/dashboard';
 import { createClient } from '@/lib/supabase/server';
@@ -80,19 +79,55 @@ export default async function DashboardPage({
       ) : null}
 
       <Stats stats={stats} />
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-8">
-          <XeroConnect connected={xeroConnected} lastSyncedAt={lastSyncText} />
-          <InvoiceList invoices={invoices} />
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
-            Need more control? Manage reminders and billing in{' '}
-            <Link href="/settings" className="font-semibold text-indigo-600">
-              Settings
-            </Link>
-            .
+      
+      <XeroConnect connected={xeroConnected} lastSyncedAt={lastSyncText} />
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Link
+          href="/dashboard/overdue"
+          className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-indigo-300 hover:shadow-md"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-rose-100 p-3">
+                <AlertCircle className="h-6 w-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Overdue Invoices</h3>
+                <p className="mt-1 text-2xl font-bold text-rose-600">{invoices.length}</p>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-slate-400 transition group-hover:text-indigo-600" />
           </div>
-        </div>
-        <UpcomingReminders reminders={upcomingReminders} />
+          <p className="mt-4 text-sm text-slate-500">
+            {invoices.length > 0 
+              ? `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} need${invoices.length === 1 ? 's' : ''} attention`
+              : 'All invoices are up to date'}
+          </p>
+        </Link>
+
+        <Link
+          href="/dashboard/upcoming"
+          className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-indigo-300 hover:shadow-md"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-indigo-100 p-3">
+                <Clock className="h-6 w-6 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Upcoming Reminders</h3>
+                <p className="mt-1 text-2xl font-bold text-indigo-600">{upcomingReminders.length}</p>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-slate-400 transition group-hover:text-indigo-600" />
+          </div>
+          <p className="mt-4 text-sm text-slate-500">
+            {upcomingReminders.length > 0
+              ? `${upcomingReminders.length} reminder${upcomingReminders.length === 1 ? '' : 's'} scheduled`
+              : 'No reminders scheduled'}
+          </p>
+        </Link>
       </div>
     </div>
   );

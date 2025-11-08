@@ -48,8 +48,8 @@ export default async function InvoicesPage({
   const pageParam = typeof searchParams.page === 'string' ? Number.parseInt(searchParams.page, 10) : 1;
   const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
 
-  // Using mock data for now - supabase parameter not used
-  const { invoices, total } = await fetchInvoices(null as any, {
+  const supabase = createClient();
+  const { invoices, total } = await fetchInvoices(supabase, {
     status,
     search,
     page,
@@ -187,8 +187,9 @@ export default async function InvoicesPage({
 
       <div className="flex items-center justify-between text-sm text-slate-500">
         <p>
-          Showing {(page - 1) * PAGE_SIZE + 1} –
-          {Math.min(page * PAGE_SIZE, total)} of {total} invoices
+          {total === 0
+            ? 'No invoices to display yet.'
+            : `Showing ${(page - 1) * PAGE_SIZE + 1} – ${Math.min(page * PAGE_SIZE, total)} of ${total} invoices`}
         </p>
         <div className="flex items-center gap-2">
           <Link

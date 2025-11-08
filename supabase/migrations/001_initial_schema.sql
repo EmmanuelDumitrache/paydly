@@ -30,12 +30,6 @@ create table if not exists invoices (
   currency_code text default 'AUD',
   due_date date not null,
   status text not null,
-  days_overdue integer generated always as (
-    case
-      when status != 'PAID' and due_date < current_date then current_date - due_date
-      else 0
-    end
-  ) stored,
   last_reminder_sent_at timestamptz,
   reminder_count integer default 0,
   reminders_paused boolean default false,
@@ -91,12 +85,20 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute procedure public.handle_new_user();
 
+-- View for invoices with calculated overdue days (optional convenience)
+create or replace view invoices_with_overdue as
+select
+  *,
+  case
+    when status != 'PAID' and due_date < current_date then current_date - due_date
+    else 0
+  end as days_overdue
+from invoices;
+
 -- Indexes
 create index if not exists idx_invoices_user_id on invoices (user_id);
 create index if not exists idx_invoices_status on invoices (status);
 create index if not exists idx_invoices_due_date on invoices (due_date);
-create index if not exists idx_invoices_overdue on invoices (user_id, status, due_date)
-  where status != 'PAID' and due_date < current_date;
 create index if not exists idx_reminder_logs_invoice_id on reminder_logs (invoice_id);
 
 -- Enable row-level security
@@ -105,31 +107,50 @@ alter table invoices enable row level security;
 alter table reminder_logs enable row level security;
 alter table reminder_settings enable row level security;
 
--- RLS policies
-create policy if not exists "Users can view own profile" on profiles
+-- RLS policies (drop existing first to avoid conflicts)
+drop policy if exists "Users can view own profile" on profiles;
+drop policy if exists "Users can update own profile" on profiles;
+drop policy if exists "Users can insert own profile" on profiles;
+drop policy if exists "Users can view own invoices" on invoices;
+drop policy if exists "Users can update own invoices" on invoices;
+drop policy if exists "Users can insert own invoices" on invoices;
+drop policy if exists "Users can view own reminder logs" on reminder_logs;
+drop policy if exists "Users can insert own reminder logs" on reminder_logs;
+drop policy if exists "Users can view own settings" on reminder_settings;
+drop policy if exists "Users can update own settings" on reminder_settings;
+drop policy if exists "Users can insert own settings" on reminder_settings;
+
+-- Create RLS policies
+create policy "Users can view own profile" on profiles
   for select using (auth.uid() = id);
 
-create policy if not exists "Users can update own profile" on profiles
+create policy "Users can update own profile" on profiles
   for update using (auth.uid() = id);
 
-create policy if not exists "Users can insert own profile" on profiles
+create policy "Users can insert own profile" on profiles
   for insert with check (auth.uid() = id);
 
-create policy if not exists "Users can view own invoices" on invoices
+create policy "Users can view own invoices" on invoices
   for select using (auth.uid() = user_id);
 
-create policy if not exists "Users can update own invoices" on invoices
+create policy "Users can update own invoices" on invoices
   for update using (auth.uid() = user_id);
 
-create policy if not exists "Users can view own reminder logs" on reminder_logs
+create policy "Users can insert own invoices" on invoices
+  for insert with check (auth.uid() = user_id);
+
+create policy "Users can view own reminder logs" on reminder_logs
   for select using (auth.uid() = user_id);
 
-create policy if not exists "Users can view own settings" on reminder_settings
+create policy "Users can insert own reminder logs" on reminder_logs
+  for insert with check (auth.uid() = user_id);
+
+create policy "Users can view own settings" on reminder_settings
   for select using (auth.uid() = user_id);
 
-create policy if not exists "Users can update own settings" on reminder_settings
+create policy "Users can update own settings" on reminder_settings
   for update using (auth.uid() = user_id);
 
-create policy if not exists "Users can insert own settings" on reminder_settings
+create policy "Users can insert own settings" on reminder_settings
   for insert with check (auth.uid() = user_id);
 

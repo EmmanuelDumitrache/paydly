@@ -75,11 +75,19 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     .order('due_date', { ascending: false })
     .limit(10);
 
-  const invoices: Invoice[] = (invoicesRows ?? []).map((invoice) => ({
-    ...invoice,
-    amount_due: parseCurrency(invoice.amount_due),
-    total_amount: parseCurrency(invoice.total_amount),
-  }));
+  const invoices: Invoice[] = (invoicesRows ?? []).map((invoice) => {
+    const daysOverdue =
+      invoice.status !== 'PAID'
+        ? Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0)
+        : 0;
+
+    return {
+      ...invoice,
+      amount_due: parseCurrency(invoice.amount_due),
+      total_amount: parseCurrency(invoice.total_amount),
+      days_overdue: daysOverdue,
+    };
+  });
 
   const { count: remindersCount } = await supabase
     .from('reminder_logs')
@@ -134,7 +142,7 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
   const upcomingReminders: UpcomingReminder[] = [];
 
   for (const invoice of potentialReminders ?? []) {
-    const daysOverdue = invoice.days_overdue ?? 0;
+    const daysOverdue = Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0);
     const currentType = nextReminderType(daysOverdue, invoice.reminder_count ?? 0, schedule);
     const tomorrowType = nextReminderType(daysOverdue + 1, invoice.reminder_count ?? 0, schedule);
 

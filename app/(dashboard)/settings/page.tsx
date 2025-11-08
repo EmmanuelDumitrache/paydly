@@ -1,19 +1,31 @@
 import { differenceInCalendarDays, format } from 'date-fns';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 import { updateAccountProfile, updateReminderSchedule } from './actions';
-import { mockProfile } from '@/lib/data/mock';
+import { createClient } from '@/lib/supabase/server';
 
-export default function SettingsPage() {
-  // Using mock data for now - will connect to Supabase after database setup
-  const profile = mockProfile;
-  
-  // Mock reminder settings
-  const reminderSettings = {
-    day_7_enabled: true,
-    day_14_enabled: true,
-    day_21_enabled: true,
-  };
+export default async function SettingsPage() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const { data: reminderSettings } = await supabase
+    .from('reminder_settings')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
 
   const connectedToXero = Boolean(profile?.xero_tenant_id);
   const subscriptionStatus = profile?.subscription_status ?? 'trialing';

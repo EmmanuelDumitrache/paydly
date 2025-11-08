@@ -1,4 +1,5 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
+import { differenceInCalendarDays } from 'date-fns';
 import { NextResponse } from 'next/server';
 
 import { getReminderTemplate } from '@/lib/email/templates';
@@ -38,7 +39,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Reminders are paused for this invoice' }, { status: 400 });
   }
 
-  const daysOverdue = invoice.days_overdue ?? 0;
+  const daysOverdue =
+    invoice.status !== 'PAID'
+      ? Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0)
+      : 0;
   if (daysOverdue < 7) {
     return NextResponse.json({ error: 'Invoice is not overdue enough to send a reminder' }, { status: 400 });
   }

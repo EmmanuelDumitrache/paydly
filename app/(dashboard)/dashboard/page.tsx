@@ -5,7 +5,8 @@ import { InvoiceList } from '@/components/dashboard/InvoiceList';
 import { Stats } from '@/components/dashboard/Stats';
 import { UpcomingReminders } from '@/components/dashboard/UpcomingReminders';
 import { XeroConnect } from '@/components/dashboard/XeroConnect';
-import { getMockDashboardData } from '@/lib/data/mock';
+import { getDashboardData } from '@/lib/data/dashboard';
+import { createClient } from '@/lib/supabase/server';
 
 function TrialBanner({ trialEndsAt }: { trialEndsAt: string | null }) {
   if (!trialEndsAt) return null;
@@ -29,9 +30,9 @@ function TrialBanner({ trialEndsAt }: { trialEndsAt: string | null }) {
   );
 }
 
-export default function DashboardPage() {
-  // Using mock data for now - will connect to Supabase after database setup
-  const { profile, stats, invoices, upcomingReminders, xeroConnected } = getMockDashboardData();
+export default async function DashboardPage() {
+  const supabase = createClient();
+  const { profile, stats, invoices, upcomingReminders, xeroConnected } = await getDashboardData(supabase);
 
   const lastSyncText = profile?.updated_at
     ? `${format(new Date(profile.updated_at), 'd MMM yyyy, h:mm a')}`

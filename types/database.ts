@@ -77,7 +77,6 @@ export interface Database {
           currency_code: string | null;
           due_date: string;
           status: 'DRAFT' | 'SUBMITTED' | 'AUTHORISED' | 'PAID';
-          days_overdue: number;
           last_reminder_sent_at: string | null;
           reminder_count: number;
           reminders_paused: boolean;
@@ -96,7 +95,6 @@ export interface Database {
           currency_code?: string | null;
           due_date: string;
           status: 'DRAFT' | 'SUBMITTED' | 'AUTHORISED' | 'PAID';
-          days_overdue?: number;
           last_reminder_sent_at?: string | null;
           reminder_count?: number;
           reminders_paused?: boolean;
@@ -115,7 +113,6 @@ export interface Database {
           currency_code?: string | null;
           due_date?: string;
           status?: 'DRAFT' | 'SUBMITTED' | 'AUTHORISED' | 'PAID';
-          days_overdue?: number;
           last_reminder_sent_at?: string | null;
           reminder_count?: number;
           reminders_paused?: boolean;

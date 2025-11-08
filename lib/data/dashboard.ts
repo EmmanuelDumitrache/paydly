@@ -67,11 +67,23 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     .order('due_date', { ascending: true });
 
   // Filter overdue invoices in code for accurate date comparison
-  const overdueInvoicesData = (allInvoicesRows ?? []).filter((invoice) => {
+  const overdueInvoicesData = (allInvoicesRows ?? []).map((invoice) => {
     const dueDate = new Date(invoice.due_date);
     dueDate.setHours(0, 0, 0, 0);
-    return dueDate < today;
-  });
+    const isOverdue = dueDate < today;
+
+    console.log('[Dashboard] Invoice status check:', {
+      invoice_number: invoice.invoice_number,
+      due_date: invoice.due_date,
+      parsed_due_date: dueDate.toISOString(),
+      isOverdue,
+      reminders_paused: invoice.reminders_paused,
+      reminder_count: invoice.reminder_count,
+      amount_due: invoice.amount_due,
+    });
+
+    return { ...invoice, isOverdue };
+  }).filter((invoice) => invoice.isOverdue);
 
   const overdueCount = overdueInvoicesData.length;
   const totalOverdueAmount = overdueInvoicesData.reduce(

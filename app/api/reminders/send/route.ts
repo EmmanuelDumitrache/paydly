@@ -8,19 +8,27 @@ import { nextReminderType } from '@/lib/reminders/utils';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
+  console.log('[API /api/reminders/send] Request received');
+  
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  console.log('[API /api/reminders/send] User:', user?.id);
+
   if (!user) {
+    console.log('[API /api/reminders/send] Unauthorized - no user');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const body = await request.json().catch(() => null);
   const invoiceId = body?.invoice_id as string | undefined;
 
+  console.log('[API /api/reminders/send] Invoice ID:', invoiceId);
+
   if (!invoiceId) {
+    console.log('[API /api/reminders/send] Missing invoice_id');
     return NextResponse.json({ error: 'invoice_id is required' }, { status: 400 });
   }
 
@@ -31,11 +39,15 @@ export async function POST(request: Request) {
     .eq('user_id', user.id)
     .maybeSingle();
 
+  console.log('[API /api/reminders/send] Invoice found:', invoice?.invoice_number, 'Error:', invoiceError);
+
   if (invoiceError || !invoice) {
+    console.log('[API /api/reminders/send] Invoice not found');
     return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
   }
 
   if (invoice.reminders_paused) {
+    console.log('[API /api/reminders/send] Reminders paused');
     return NextResponse.json({ error: 'Reminders are paused for this invoice' }, { status: 400 });
   }
 
@@ -43,7 +55,11 @@ export async function POST(request: Request) {
     invoice.status !== 'PAID'
       ? Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0)
       : 0;
+  
+  console.log('[API /api/reminders/send] Days overdue:', daysOverdue);
+  
   if (daysOverdue < 7) {
+    console.log('[API /api/reminders/send] Not overdue enough');
     return NextResponse.json({ error: 'Invoice is not overdue enough to send a reminder' }, { status: 400 });
   }
 
@@ -66,7 +82,11 @@ export async function POST(request: Request) {
   };
 
   const reminderType = nextReminderType(daysOverdue, invoice.reminder_count ?? 0, schedule);
+  
+  console.log('[API /api/reminders/send] Reminder type:', reminderType, 'Schedule:', schedule);
+  
   if (!reminderType) {
+    console.log('[API /api/reminders/send] No reminder type available');
     return NextResponse.json({ error: 'No reminder scheduled for this invoice at the moment' }, { status: 400 });
   }
 
@@ -81,12 +101,18 @@ export async function POST(request: Request) {
   });
 
   try {
+    const emailTo = invoice.contact_email || user.email;
+    console.log('[API /api/reminders/send] Sending email to:', emailTo);
+    console.log('[API /api/reminders/send] Template:', { subject: template.subject });
+    
     await sendReminderEmail({
-      to: invoice.contact_email || user.email,
+      to: emailTo,
       subject: template.subject,
       html: template.html,
       text: template.text,
     });
+
+    console.log('[API /api/reminders/send] Email sent successfully');
 
     await supabase.from('reminder_logs').insert({
       invoice_id: invoice.id,
@@ -103,8 +129,11 @@ export async function POST(request: Request) {
       })
       .eq('id', invoice.id);
 
+    console.log('[API /api/reminders/send] Success - returning 200');
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('[API /api/reminders/send] Error sending email:', error);
+    
     await supabase.from('reminder_logs').insert({
       invoice_id: invoice.id,
       user_id: user.id,

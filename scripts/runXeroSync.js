@@ -118,7 +118,19 @@ async function main() {
   const invoices = await fetchInvoices(accessToken, profile.xero_tenant_id);
   console.log(`Fetched ${invoices.length} invoices`);
 
-  console.log('[runXeroSync] Raw invoice sample:', invoices.slice(0, 5).map(inv => ({ InvoiceNumber: inv.InvoiceNumber, DueDate: inv.DueDate, Status: inv.Status, AmountDue: inv.AmountDue })));
+  console.log('[runXeroSync] Raw invoice sample:', invoices.slice(0, 5).map(inv => ({
+    InvoiceNumber: inv.InvoiceNumber,
+    DueDate: inv.DueDate,
+    Status: inv.Status,
+    AmountDue: inv.AmountDue,
+    Contact: {
+      Name: inv.Contact?.Name,
+      EmailAddress: inv.Contact?.EmailAddress,
+      EmailAddresses: inv.Contact?.EmailAddresses,
+      FirstName: inv.Contact?.FirstName,
+      LastName: inv.Contact?.LastName,
+    }
+  })));
 
   const rows = invoices
     .filter((invoice) => invoice.Status !== 'PAID' && invoice.AmountDue > 0)
@@ -126,12 +138,33 @@ async function main() {
       const due = parseXeroDate(invoice.DueDate);
       console.log('[runXeroSync] Parsed due date:', { invoice: invoice.InvoiceNumber, raw: invoice.DueDate, parsed: due ? due.toISOString() : null });
       const dueDate = due ? due.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      const contactNameRaw = invoice.Contact?.Name?.trim() ?? '';
+      const contactEmailRaw = invoice.Contact?.EmailAddress?.trim() ?? '';
+      const fallbackEmailFromName =
+        contactNameRaw && contactNameRaw.includes('@') ? contactNameRaw : null;
+      const contactEmail = contactEmailRaw || fallbackEmailFromName;
+      const derivedNameFromParts = `${invoice.Contact?.FirstName ?? ''} ${invoice.Contact?.LastName ?? ''}`.trim();
+      const contactName =
+        (contactNameRaw && !contactNameRaw.includes('@') && contactNameRaw) ||
+        (derivedNameFromParts.length ? derivedNameFromParts : '') ||
+        contactEmail ||
+        'Unknown';
+
+      console.log('[runXeroSync] Contact parsing:', {
+        invoice: invoice.InvoiceNumber,
+        contactNameRaw,
+        contactEmailRaw,
+        fallbackEmailFromName,
+        contactEmail,
+        contactName,
+      });
+
       return {
         user_id: userId,
         xero_invoice_id: invoice.InvoiceID,
         invoice_number: invoice.InvoiceNumber || 'N/A',
-        contact_name: invoice.Contact?.Name || 'Unknown',
-        contact_email: invoice.Contact?.EmailAddress || null,
+        contact_name: contactName,
+        contact_email: contactEmail,
         amount_due: Number(invoice.AmountDue) || 0,
         total_amount: Number(invoice.Total) || 0,
         currency_code: invoice.CurrencyCode || 'AUD',

@@ -116,12 +116,25 @@ export async function syncXeroInvoicesForUser(
         });
       }
 
+      const contactNameRaw = invoice.Contact?.Name?.trim() ?? '';
+      const contactEmailRaw = invoice.Contact?.EmailAddress?.trim() ?? '';
+      const fallbackEmailFromName =
+        contactNameRaw && contactNameRaw.includes('@') ? contactNameRaw : null;
+      const contactEmail = contactEmailRaw || fallbackEmailFromName;
+      const derivedNameFromParts = `${invoice.Contact?.FirstName ?? ''} ${invoice.Contact?.LastName ?? ''}`
+        .trim();
+      const contactName =
+        (contactNameRaw && !contactNameRaw.includes('@') && contactNameRaw) ||
+        (derivedNameFromParts.length ? derivedNameFromParts : '') ||
+        contactEmail ||
+        'Unknown';
+
       return {
         user_id: userId,
         xero_invoice_id: invoice.InvoiceID,
         invoice_number: invoice.InvoiceNumber || 'N/A',
-        contact_name: invoice.Contact?.Name || 'Unknown',
-        contact_email: invoice.Contact?.EmailAddress || null,
+        contact_name: contactName,
+        contact_email: contactEmail,
         amount_due: Number.isFinite(amountDue) ? amountDue : 0,
         total_amount: Number.isFinite(totalAmount) ? totalAmount : 0,
         currency_code: invoice.CurrencyCode || 'AUD',

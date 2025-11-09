@@ -17,12 +17,14 @@ export async function sendReminderEmail(payload: SendEmailPayload) {
 
   const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'Paydly Reminders <reminders@paydly.com>';
 
-  await resendClient.emails.send({
+  const response = await resendClient.emails.send({
     from: fromEmail,
     to: payload.to,
     subject: payload.subject,
     html: payload.html,
     text: payload.text,
   });
+
+  return response;
 }
 

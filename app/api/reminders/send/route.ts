@@ -90,6 +90,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No reminder scheduled for this invoice at the moment' }, { status: 400 });
   }
 
+  const derivedEmailFromName =
+    invoice.contact_name && invoice.contact_name.includes('@') ? invoice.contact_name : null;
+  const targetEmail = invoice.contact_email ?? derivedEmailFromName;
+
+  if (!targetEmail) {
+    console.log('[API /api/reminders/send] Missing recipient email', {
+      invoiceId: invoice.id,
+      contact_name: invoice.contact_name,
+      contact_email: invoice.contact_email,
+    });
+    return NextResponse.json(
+      { error: 'This invoice does not have a client email address. Add one in Xero and re-sync.' },
+      { status: 400 }
+    );
+  }
+
   const companyName = profile?.company_name || profile?.email || user.email;
   const template = getReminderTemplate(reminderType, {
     invoice_number: invoice.invoice_number,
@@ -101,18 +117,17 @@ export async function POST(request: Request) {
   });
 
   try {
-    const emailTo = invoice.contact_email || user.email;
-    console.log('[API /api/reminders/send] Sending email to:', emailTo);
+    console.log('[API /api/reminders/send] Sending email to:', targetEmail);
     console.log('[API /api/reminders/send] Template:', { subject: template.subject });
     
-    await sendReminderEmail({
-      to: emailTo,
+    const sendResponse = await sendReminderEmail({
+      to: targetEmail,
       subject: template.subject,
       html: template.html,
       text: template.text,
     });
 
-    console.log('[API /api/reminders/send] Email sent successfully');
+    console.log('[API /api/reminders/send] Email sent successfully', sendResponse);
 
     await supabase.from('reminder_logs').insert({
       invoice_id: invoice.id,

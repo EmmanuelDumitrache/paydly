@@ -15,7 +15,8 @@ export async function sendReminderEmail(payload: SendEmailPayload) {
     throw new Error('RESEND_API_KEY is not configured');
   }
 
-  const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'Paydly Reminders <reminders@paydly.com>';
+  const fromEmail =
+    process.env.RESEND_FROM_EMAIL ?? 'Paydly Reminders <onboarding@resend.dev>';
 
   const response = await resendClient.emails.send({
     from: fromEmail,

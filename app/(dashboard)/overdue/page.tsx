@@ -21,7 +21,7 @@ function getStatusBadge(status: Invoice['status'], daysOverdue: number) {
 
 export default async function OverduePage() {
   const supabase = createClient();
-  const { invoices } = await getDashboardData(supabase);
+  const { invoices, profile } = await getDashboardData(supabase);
 
   console.log('[OverduePage] Rendering with invoices:', invoices);
 
@@ -52,16 +52,16 @@ export default async function OverduePage() {
 
         {invoices.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-slate-200 text-sm">
+            <table className="w-full table-fixed divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50">
-                <tr>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Invoice</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Client</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Amount</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Due date</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Days overdue</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Last reminder</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Actions</th>
+                <tr className="text-left text-slate-500">
+                  <th scope="col" className="w-[120px] px-4 py-3 text-xs font-medium uppercase tracking-wide">Invoice</th>
+                  <th scope="col" className="w-[220px] px-4 py-3 text-xs font-medium uppercase tracking-wide">Client</th>
+                  <th scope="col" className="w-[130px] px-4 py-3 text-xs font-medium uppercase tracking-wide">Amount</th>
+                  <th scope="col" className="w-[140px] px-4 py-3 text-xs font-medium uppercase tracking-wide">Due date</th>
+                  <th scope="col" className="w-[130px] px-4 py-3 text-xs font-medium uppercase tracking-wide">Days overdue</th>
+                  <th scope="col" className="w-[150px] px-4 py-3 text-xs font-medium uppercase tracking-wide">Last reminder</th>
+                  <th scope="col" className="w-[170px] px-4 py-3 text-xs font-medium uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
@@ -69,7 +69,7 @@ export default async function OverduePage() {
                   const badge = getStatusBadge(invoice.status, invoice.days_overdue);
                   return (
                     <tr key={invoice.id}>
-                      <td className="whitespace-nowrap px-4 py-4">
+                      <td className="whitespace-nowrap px-4 py-4 align-top">
                         <div className="flex items-center gap-2">
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${badge.className}`}
@@ -79,24 +79,24 @@ export default async function OverduePage() {
                           <span className="font-medium text-slate-900">{invoice.invoice_number}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 align-top">
                         <div className="text-sm font-medium text-slate-900">{invoice.contact_name}</div>
-                        <div className="text-xs text-slate-500">{invoice.contact_email ?? 'No email on file'}</div>
+                        <div className="text-xs text-slate-500 break-words">{invoice.contact_email ?? 'No email on file'}</div>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">
+                      <td className="whitespace-nowrap px-4 py-4 align-top text-sm font-semibold text-slate-900">
                         ${invoice.amount_due.toFixed(2)} {invoice.currency_code}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                      <td className="whitespace-nowrap px-4 py-4 align-top text-sm text-slate-600">
                         {format(new Date(invoice.due_date), 'd MMM yyyy')}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-sm text-rose-600">{invoice.days_overdue} days</td>
-                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-500">
+                      <td className="whitespace-nowrap px-4 py-4 align-top text-sm text-rose-600">{invoice.days_overdue} days</td>
+                      <td className="whitespace-nowrap px-4 py-4 align-top text-sm text-slate-500">
                         {invoice.last_reminder_sent_at
                           ? `${formatDistanceToNowStrict(new Date(invoice.last_reminder_sent_at))} ago`
                           : 'Not sent'}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-4">
-                        <div className="flex gap-2">
+                      <td className="whitespace-nowrap px-4 py-4 align-top">
+                        <div className="flex flex-col gap-2">
                           <button
                             type="button"
                             className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-indigo-500 hover:text-indigo-600"
@@ -107,6 +107,7 @@ export default async function OverduePage() {
                             invoiceId={invoice.id}
                             invoiceNumber={invoice.invoice_number}
                             contactEmail={invoice.contact_email}
+                            fallbackEmail={profile?.email ?? null}
                           />
                         </div>
                       </td>

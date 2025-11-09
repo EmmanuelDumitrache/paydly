@@ -7,20 +7,20 @@ interface SendReminderButtonProps {
   invoiceId: string;
   invoiceNumber: string;
   contactEmail: string | null;
+  fallbackEmail?: string | null;
 }
 
-export function SendReminderButton({ invoiceId, invoiceNumber, contactEmail }: SendReminderButtonProps) {
+export function SendReminderButton({
+  invoiceId,
+  invoiceNumber,
+  contactEmail,
+  fallbackEmail,
+}: SendReminderButtonProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const handleSend = async () => {
-    console.log('[SendReminderButton] Button clicked', { invoiceId, invoiceNumber, contactEmail });
-    
-    if (!contactEmail) {
-      console.log('[SendReminderButton] No contact email');
-      setMessage({ type: 'error', text: 'No email address on file' });
-      return;
-    }
+    console.log('[SendReminderButton] Button clicked', { invoiceId, invoiceNumber, contactEmail, fallbackEmail });
 
     setLoading(true);
     setMessage(null);
@@ -37,7 +37,11 @@ export function SendReminderButton({ invoiceId, invoiceNumber, contactEmail }: S
 
       if (res.ok) {
         console.log('[SendReminderButton] Success!');
-        setMessage({ type: 'success', text: `Reminder sent to ${contactEmail}` });
+        const target = contactEmail ?? fallbackEmail ?? 'account email';
+        setMessage({
+          type: 'success',
+          text: `Reminder sent to ${target}`,
+        });
       } else {
         const data = await res.json();
         console.log('[SendReminderButton] Error response:', data);
@@ -55,12 +59,17 @@ export function SendReminderButton({ invoiceId, invoiceNumber, contactEmail }: S
     <div className="flex flex-col gap-1">
       <button
         onClick={handleSend}
-        disabled={loading || !contactEmail}
-        className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={loading}
+        className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Mail className="h-3 w-3" />
         {loading ? 'Sending...' : 'Send Reminder'}
       </button>
+      {!contactEmail && (
+        <span className="text-[10px] text-slate-400">
+          No client email — will send to account email instead.
+        </span>
+      )}
       {message && (
         <span className={`text-xs ${message.type === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>
           {message.text}

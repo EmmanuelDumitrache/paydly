@@ -24,6 +24,7 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const invoiceId = body?.invoice_id as string | undefined;
+  const forceSend = Boolean(body?.force);
 
   console.log('[API /api/reminders/send] Invoice ID:', invoiceId);
 
@@ -46,49 +47,60 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
   }
 
-  if (invoice.reminders_paused) {
+  if (invoice.reminders_paused && !forceSend) {
     console.log('[API /api/reminders/send] Reminders paused');
     return NextResponse.json({ error: 'Reminders are paused for this invoice' }, { status: 400 });
   }
 
-  const daysOverdue =
-    invoice.status !== 'PAID'
-      ? Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0)
-      : 0;
-  
-  console.log('[API /api/reminders/send] Days overdue:', daysOverdue);
-  
-  if (daysOverdue < 7) {
-    console.log('[API /api/reminders/send] Not overdue enough');
-    return NextResponse.json({ error: 'Invoice is not overdue enough to send a reminder' }, { status: 400 });
-  }
+  let reminderType: 'day_7' | 'day_14' | 'day_21';
+  let shouldIncrementCount = true;
 
-  const { data: settings } = await supabase
-    .from('reminder_settings')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  if (forceSend) {
+    reminderType = 'day_7';
+    shouldIncrementCount = false;
+    console.log('[API /api/reminders/send] Force sending reminder', { invoiceId, reminderType });
+  } else {
+    const daysOverdue =
+      invoice.status !== 'PAID'
+        ? Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0)
+        : 0;
+
+    console.log('[API /api/reminders/send] Days overdue:', daysOverdue);
+
+    if (daysOverdue < 7) {
+      console.log('[API /api/reminders/send] Not overdue enough');
+      return NextResponse.json({ error: 'Invoice is not overdue enough to send a reminder' }, { status: 400 });
+    }
+
+    const { data: settings } = await supabase
+      .from('reminder_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const schedule = {
+      day_7_enabled: settings?.day_7_enabled ?? true,
+      day_14_enabled: settings?.day_14_enabled ?? true,
+      day_21_enabled: settings?.day_21_enabled ?? true,
+    };
+
+    const nextType = nextReminderType(daysOverdue, invoice.reminder_count ?? 0, schedule);
+
+    console.log('[API /api/reminders/send] Reminder type:', nextType, 'Schedule:', schedule);
+
+    if (!nextType) {
+      console.log('[API /api/reminders/send] No reminder type available');
+      return NextResponse.json({ error: 'No reminder scheduled for this invoice at the moment' }, { status: 400 });
+    }
+
+    reminderType = nextType;
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('company_name,email')
     .eq('id', user.id)
     .maybeSingle();
-
-  const schedule = {
-    day_7_enabled: settings?.day_7_enabled ?? true,
-    day_14_enabled: settings?.day_14_enabled ?? true,
-    day_21_enabled: settings?.day_21_enabled ?? true,
-  };
-
-  const reminderType = nextReminderType(daysOverdue, invoice.reminder_count ?? 0, schedule);
-  
-  console.log('[API /api/reminders/send] Reminder type:', reminderType, 'Schedule:', schedule);
-  
-  if (!reminderType) {
-    console.log('[API /api/reminders/send] No reminder type available');
-    return NextResponse.json({ error: 'No reminder scheduled for this invoice at the moment' }, { status: 400 });
-  }
 
   const derivedEmailFromName =
     invoice.contact_name && invoice.contact_name.includes('@') ? invoice.contact_name : null;
@@ -136,13 +148,15 @@ export async function POST(request: Request) {
       email_status: 'sent',
     });
 
-    await supabase
-      .from('invoices')
-      .update({
-        last_reminder_sent_at: new Date().toISOString(),
-        reminder_count: (invoice.reminder_count ?? 0) + 1,
-      })
-      .eq('id', invoice.id);
+    const invoiceUpdate: Record<string, unknown> = {
+      last_reminder_sent_at: new Date().toISOString(),
+    };
+
+    if (shouldIncrementCount) {
+      invoiceUpdate.reminder_count = (invoice.reminder_count ?? 0) + 1;
+    }
+
+    await supabase.from('invoices').update(invoiceUpdate).eq('id', invoice.id);
 
     console.log('[API /api/reminders/send] Success - returning 200');
     return NextResponse.json({ success: true });

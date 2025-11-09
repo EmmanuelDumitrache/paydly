@@ -31,7 +31,7 @@ export function SendReminderButton({
       const res = await fetch('/api/reminders/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invoice_id: invoiceId }),
+        body: JSON.stringify({ invoice_id: invoiceId, force: true }),
       });
 
       console.log('[SendReminderButton] Response status:', res.status);

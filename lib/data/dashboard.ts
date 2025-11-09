@@ -37,7 +37,14 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
   const profile = profileRow as Profile | null;
   const userId = profile?.id;
 
+  console.log('[getDashboardData] Profile:', { 
+    userId, 
+    xero_tenant_id: profile?.xero_tenant_id,
+    xero_connected: Boolean(profile?.xero_tenant_id)
+  });
+
   if (!userId) {
+    console.log('[getDashboardData] No userId found, returning empty data');
     return {
       profile: null,
       stats: {
@@ -58,6 +65,8 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
   const todayISO = formatISO(today, { representation: 'date' });
   const monthStart = formatISO(startOfMonth(new Date()), { representation: 'date' });
 
+  console.log('[getDashboardData] Date filters:', { today: todayISO, monthStart });
+
   // Fetch all unpaid invoices and filter in code for more reliable overdue detection
   const { data: allInvoicesRows } = await supabase
     .from('invoices')
@@ -65,6 +74,11 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     .eq('user_id', userId)
     .neq('status', 'PAID')
     .order('due_date', { ascending: true });
+
+  console.log('[getDashboardData] Fetched invoices:', { 
+    count: allInvoicesRows?.length, 
+    invoices: allInvoicesRows 
+  });
 
   // Filter overdue invoices in code for accurate date comparison
   const overdueInvoicesData = (allInvoicesRows ?? []).map((invoice) => {
@@ -76,6 +90,7 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
       invoice_number: invoice.invoice_number,
       due_date: invoice.due_date,
       parsed_due_date: dueDate.toISOString(),
+      today_normalized: today.toISOString(),
       isOverdue,
       reminders_paused: invoice.reminders_paused,
       reminder_count: invoice.reminder_count,
@@ -84,6 +99,15 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
 
     return { ...invoice, isOverdue };
   }).filter((invoice) => invoice.isOverdue);
+
+  console.log('[getDashboardData] Overdue invoices:', { 
+    count: overdueInvoicesData.length, 
+    invoices: overdueInvoicesData.map(inv => ({ 
+      invoice_number: inv.invoice_number, 
+      due_date: inv.due_date,
+      amount_due: inv.amount_due 
+    }))
+  });
 
   const overdueCount = overdueInvoicesData.length;
   const totalOverdueAmount = overdueInvoicesData.reduce(
@@ -150,10 +174,25 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
   // Use the same overdueInvoicesData for upcoming reminders
   const upcomingReminders: UpcomingReminder[] = [];
 
+  console.log('[getDashboardData] Building upcoming reminders from overdue invoices:', {
+    overdueCount: overdueInvoicesData.length,
+    unpausedCount: overdueInvoicesData.filter(inv => !inv.reminders_paused).length
+  });
+
   for (const invoice of overdueInvoicesData.filter(inv => !inv.reminders_paused)) {
     const daysOverdue = Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0);
     const currentType = nextReminderType(daysOverdue, invoice.reminder_count ?? 0, schedule);
     const tomorrowType = nextReminderType(daysOverdue + 1, invoice.reminder_count ?? 0, schedule);
+
+    console.log('[getDashboardData] Reminder check for invoice:', {
+      invoice_number: invoice.invoice_number,
+      daysOverdue,
+      reminder_count: invoice.reminder_count,
+      currentType,
+      tomorrowType,
+      alreadySent: alreadySentToday(invoice.last_reminder_sent_at ?? null),
+      last_reminder_sent_at: invoice.last_reminder_sent_at
+    });
 
     if (alreadySentToday(invoice.last_reminder_sent_at ?? null)) continue;
 
@@ -185,7 +224,12 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     });
   }
 
-  return {
+  console.log('[getDashboardData] Upcoming reminders:', { 
+    count: upcomingReminders.length, 
+    reminders: upcomingReminders 
+  });
+
+  const finalData = {
     profile,
     stats: {
       total_overdue_invoices: overdueCount ?? 0,
@@ -198,5 +242,15 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     upcomingReminders,
     xeroConnected: Boolean(profile?.xero_tenant_id),
   };
+
+  console.log('[getDashboardData] Final return:', { 
+    overdueCount, 
+    totalOverdueAmount, 
+    invoicesCount: invoices.length, 
+    upcomingCount: upcomingReminders.length,
+    xeroConnected: Boolean(profile?.xero_tenant_id)
+  });
+
+  return finalData;
 }
 

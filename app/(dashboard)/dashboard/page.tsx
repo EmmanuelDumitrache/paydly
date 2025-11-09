@@ -84,7 +84,7 @@ export default async function DashboardPage({
 
       <div className="grid gap-6 md:grid-cols-2">
         <Link
-          href="/dashboard/overdue"
+          href="/overdue"
           className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-indigo-300 hover:shadow-md"
         >
           <div className="flex items-start justify-between">
@@ -107,7 +107,7 @@ export default async function DashboardPage({
         </Link>
 
         <Link
-          href="/dashboard/upcoming"
+          href="/upcoming"
           className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-indigo-300 hover:shadow-md"
         >
           <div className="flex items-start justify-between">

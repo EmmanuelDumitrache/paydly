@@ -52,16 +52,16 @@ export default async function OverduePage() {
 
         {invoices.length ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <table className="w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left font-medium text-slate-500">Invoice</th>
-                  <th scope="col" className="px-6 py-3 text-left font-medium text-slate-500">Client</th>
-                  <th scope="col" className="px-6 py-3 text-left font-medium text-slate-500">Amount</th>
-                  <th scope="col" className="px-6 py-3 text-left font-medium text-slate-500">Due date</th>
-                  <th scope="col" className="px-6 py-3 text-left font-medium text-slate-500">Days overdue</th>
-                  <th scope="col" className="px-6 py-3 text-left font-medium text-slate-500">Last reminder</th>
-                  <th scope="col" className="px-6 py-3 text-left font-medium text-slate-500">Actions</th>
+                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Invoice</th>
+                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Client</th>
+                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Amount</th>
+                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Due date</th>
+                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Days overdue</th>
+                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Last reminder</th>
+                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium text-slate-500">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
@@ -69,7 +69,7 @@ export default async function OverduePage() {
                   const badge = getStatusBadge(invoice.status, invoice.days_overdue);
                   return (
                     <tr key={invoice.id}>
-                      <td className="px-6 py-4">
+                      <td className="whitespace-nowrap px-4 py-4">
                         <div className="flex items-center gap-2">
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${badge.className}`}
@@ -79,23 +79,23 @@ export default async function OverduePage() {
                           <span className="font-medium text-slate-900">{invoice.invoice_number}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <div className="text-sm font-medium text-slate-900">{invoice.contact_name}</div>
                         <div className="text-xs text-slate-500">{invoice.contact_email ?? 'No email on file'}</div>
                       </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-slate-900">
+                      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">
                         ${invoice.amount_due.toFixed(2)} {invoice.currency_code}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600">
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
                         {format(new Date(invoice.due_date), 'd MMM yyyy')}
                       </td>
-                      <td className="px-6 py-4 text-sm text-rose-600">{invoice.days_overdue} days</td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-rose-600">{invoice.days_overdue} days</td>
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-500">
                         {invoice.last_reminder_sent_at
                           ? `${formatDistanceToNowStrict(new Date(invoice.last_reminder_sent_at))} ago`
                           : 'Not sent'}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="whitespace-nowrap px-4 py-4">
                         <div className="flex gap-2">
                           <button
                             type="button"

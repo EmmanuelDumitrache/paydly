@@ -118,10 +118,13 @@ async function main() {
   const invoices = await fetchInvoices(accessToken, profile.xero_tenant_id);
   console.log(`Fetched ${invoices.length} invoices`);
 
+  console.log('[runXeroSync] Raw invoice sample:', invoices.slice(0, 5).map(inv => ({ InvoiceNumber: inv.InvoiceNumber, DueDate: inv.DueDate, Status: inv.Status, AmountDue: inv.AmountDue })));
+
   const rows = invoices
     .filter((invoice) => invoice.Status !== 'PAID' && invoice.AmountDue > 0)
     .map((invoice) => {
       const due = parseXeroDate(invoice.DueDate);
+      console.log('[runXeroSync] Parsed due date:', { invoice: invoice.InvoiceNumber, raw: invoice.DueDate, parsed: due ? due.toISOString() : null });
       const dueDate = due ? due.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       return {
         user_id: userId,

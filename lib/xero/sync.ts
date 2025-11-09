@@ -8,6 +8,23 @@ function isExpired(timestamp: string | null): boolean {
   return new Date(timestamp).getTime() <= Date.now() + 60 * 1000; // refresh 1 min early
 }
 
+function parseXeroDate(raw: string | null | undefined): Date | null {
+  if (!raw) return null;
+
+  if (typeof raw === 'string') {
+    const match = raw.match(/\/Date\((\d+)([+-]\d+)?\)\//);
+    if (match) {
+      const timestamp = Number(match[1]);
+      if (!Number.isNaN(timestamp)) {
+        return new Date(timestamp);
+      }
+    }
+  }
+
+  const parsed = new Date(raw as string);
+  return Number.isNaN(parsed.valueOf()) ? null : parsed;
+}
+
 export async function syncXeroInvoicesForUser(
   supabase: SupabaseServerClient,
   userId: string
@@ -71,27 +88,20 @@ export async function syncXeroInvoicesForUser(
     .filter((invoice) => invoice.Status !== 'PAID' && invoice.AmountDue > 0)
     .map((invoice) => {
       const rawDueDate = invoice.DueDate ?? null;
-      let dueDateIso = new Date().toISOString().split('T')[0];
+      const parsedDueDate = parseXeroDate(rawDueDate);
 
-      if (rawDueDate) {
-        const parsed = new Date(rawDueDate);
-        if (Number.isNaN(parsed.valueOf())) {
-          console.warn('[xero-sync] Invalid due date encountered', {
-            userId,
-            invoiceId: invoice.InvoiceID,
-            invoiceNumber: invoice.InvoiceNumber,
-            rawDueDate,
-          });
-        } else {
-          dueDateIso = parsed.toISOString().split('T')[0];
-        }
-      } else {
-        console.warn('[xero-sync] Missing due date, using fallback', {
+      if (!parsedDueDate) {
+        console.warn('[xero-sync] Invalid or missing due date, using fallback', {
           userId,
           invoiceId: invoice.InvoiceID,
           invoiceNumber: invoice.InvoiceNumber,
+          rawDueDate,
         });
       }
+
+      const dueDateIso = parsedDueDate
+        ? parsedDueDate.toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
 
       const amountDue = Number(invoice.AmountDue);
       const totalAmount = Number(invoice.Total);

@@ -18,6 +18,7 @@ export function SendReminderButton({
 }: SendReminderButtonProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const targetEmail = contactEmail ?? fallbackEmail ?? null;
 
   const handleSend = async () => {
     console.log('[SendReminderButton] Button clicked', { invoiceId, invoiceNumber, contactEmail, fallbackEmail });
@@ -37,7 +38,7 @@ export function SendReminderButton({
 
       if (res.ok) {
         console.log('[SendReminderButton] Success!');
-        const target = contactEmail ?? fallbackEmail ?? 'account email';
+        const target = targetEmail ?? 'account email';
         setMessage({
           type: 'success',
           text: `Reminder sent to ${target}`,
@@ -65,11 +66,11 @@ export function SendReminderButton({
         <Mail className="h-3 w-3" />
         {loading ? 'Sending...' : 'Send Reminder'}
       </button>
-      {!contactEmail && (
-        <span className="text-[10px] text-slate-400">
-          No client email — will send to account email instead.
-        </span>
-      )}
+      <span className="text-[10px] text-slate-400">
+        {targetEmail
+          ? `Will send to ${targetEmail}`
+          : 'Add a client email in Xero and re-sync before sending.'}
+      </span>
       {message && (
         <span className={`text-xs ${message.type === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>
           {message.text}

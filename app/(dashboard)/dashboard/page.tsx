@@ -36,7 +36,7 @@ export default async function DashboardPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const supabase = createClient();
-  const { profile, stats, invoices, upcomingReminders, xeroConnected } = await getDashboardData(supabase);
+  const { profile, stats, invoices, upcomingReminders, xeroConnected, xeroTenantName } = await getDashboardData(supabase);
 
   const lastSyncText = profile?.updated_at
     ? `${format(new Date(profile.updated_at), 'd MMM yyyy, h:mm a')}`
@@ -44,9 +44,20 @@ export default async function DashboardPage({
 
   const syncStatus = typeof searchParams.sync === 'string' ? searchParams.sync : null;
   const syncMessage = typeof searchParams.message === 'string' ? searchParams.message : null;
+  const xeroStatus = typeof searchParams.xero === 'string' ? searchParams.xero : null;
+  const xeroTenant = typeof searchParams.tenant === 'string' ? decodeURIComponent(searchParams.tenant) : null;
 
   return (
     <div className="space-y-8">
+      {xeroStatus === 'success' && xeroTenant ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-4 text-sm text-emerald-700">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">✓</span>
+            <span>Connected to <strong>{xeroTenant}</strong> successfully. You can now sync your invoices.</span>
+          </div>
+        </div>
+      ) : null}
+
       {syncStatus && syncMessage ? (
         <div
           className={`rounded-2xl border px-6 py-4 text-sm ${
@@ -59,7 +70,21 @@ export default async function DashboardPage({
         </div>
       ) : null}
 
-      {profile?.subscription_status === 'trialing' ? (
+      {profile?.subscription_status === 'expired' ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-sm text-rose-700">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p>
+              <span className="font-semibold">⚠ Trial ended</span> - Add payment to continue using Paydly
+            </p>
+            <a
+              href="/billing"
+              className="rounded-full bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-500"
+            >
+              Add Payment Method
+            </a>
+          </div>
+        </div>
+      ) : profile?.subscription_status === 'trialing' ? (
         <TrialBanner trialEndsAt={profile.trial_ends_at} />
       ) : null}
 
@@ -80,7 +105,7 @@ export default async function DashboardPage({
 
       <Stats stats={stats} />
       
-      <XeroConnect connected={xeroConnected} lastSyncedAt={lastSyncText} />
+      <XeroConnect connected={xeroConnected} lastSyncedAt={lastSyncText} tenantName={xeroTenantName} />
 
       <div className="grid gap-6 md:grid-cols-2">
         <Link

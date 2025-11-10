@@ -6,6 +6,8 @@ import { getReminderTemplate } from '@/lib/email/templates';
 import { sendReminderEmail } from '@/lib/email/send';
 import { createServiceClient } from '@/lib/supabase/service';
 import { alreadySentToday, nextReminderType } from '@/lib/reminders/utils';
+import { syncXeroInvoicesForUser } from '@/lib/xero/sync';
+import { refreshAccessToken } from '@/lib/xero/client';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -23,7 +25,7 @@ export async function GET(request: Request) {
 
   const { data: users, error: usersError } = await supabase
     .from('profiles')
-    .select('id,email,company_name,subscription_status,xero_tenant_id')
+    .select('id,email,company_name,subscription_status,xero_tenant_id,xero_access_token,xero_refresh_token,xero_token_expires_at')
     .in('subscription_status', ['trialing', 'active'])
     .not('xero_tenant_id', 'is', null);
 
@@ -33,6 +35,8 @@ export async function GET(request: Request) {
 
   let remindersSent = 0;
   let remindersFailed = 0;
+  let invoicesSynced = 0;
+  let syncsFailed = 0;
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -43,9 +47,63 @@ export async function GET(request: Request) {
     company_name: string | null;
     subscription_status: string;
     xero_tenant_id: string | null;
+    xero_access_token: string | null;
+    xero_refresh_token: string | null;
+    xero_token_expires_at: string | null;
   };
 
+  function isTokenExpired(expiresAt: string | null): boolean {
+    if (!expiresAt) return true;
+    return new Date(expiresAt).getTime() <= Date.now() + 60 * 1000; // Refresh 1 min early
+  }
+
   for (const user of (users ?? []) as UserProfile[]) {
+    // Step 1: Sync invoices from Xero BEFORE sending reminders
+    try {
+      console.log(`[Cron] Syncing invoices for user ${user.id}`);
+      
+      // Check if token needs refresh
+      if (isTokenExpired(user.xero_token_expires_at)) {
+        console.log(`[Cron] Token expired for user ${user.id}, refreshing...`);
+        if (user.xero_refresh_token) {
+          try {
+            const refreshed = await refreshAccessToken(user.xero_refresh_token);
+            const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
+            
+            // Update tokens in database
+            await supabase
+              .from('profiles')
+              .update({
+                xero_access_token: refreshed.access_token,
+                xero_refresh_token: refreshed.refresh_token,
+                xero_token_expires_at: newExpiresAt,
+              })
+              .eq('id', user.id);
+            
+            console.log(`[Cron] Token refreshed for user ${user.id}`);
+          } catch (refreshError) {
+            console.error(`[Cron] Failed to refresh token for user ${user.id}:`, refreshError);
+            syncsFailed += 1;
+            continue; // Skip this user if token refresh fails
+          }
+        } else {
+          console.error(`[Cron] No refresh token available for user ${user.id}`);
+          syncsFailed += 1;
+          continue;
+        }
+      }
+      
+      // Sync invoices
+      const syncResult = await syncXeroInvoicesForUser(supabase, user.id);
+      invoicesSynced += syncResult.synced;
+      console.log(`[Cron] Synced ${syncResult.synced} invoices for user ${user.id}`);
+    } catch (syncError) {
+      console.error(`[Cron] Failed to sync invoices for user ${user.id}:`, syncError);
+      syncsFailed += 1;
+      // Continue to send reminders even if sync fails
+    }
+
+    // Step 2: Send reminders (existing logic)
     const { data: settings } = await supabase
       .from('reminder_settings')
       .select('*')
@@ -148,6 +206,12 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ remindersSent, remindersFailed });
+  return NextResponse.json({ 
+    remindersSent, 
+    remindersFailed, 
+    invoicesSynced, 
+    syncsFailed,
+    usersProcessed: (users ?? []).length 
+  });
 }
 

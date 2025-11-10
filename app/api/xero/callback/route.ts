@@ -57,6 +57,7 @@ export async function GET(request: Request) {
         xero_refresh_token: tokenResponse.refresh_token,
         xero_token_expires_at: expiresAt,
         xero_tenant_id: tenant.tenantId,
+        xero_tenant_name: tenant.tenantName || 'Xero',
       })
       .eq('id', user.id);
 
@@ -64,7 +65,8 @@ export async function GET(request: Request) {
       throw updateError;
     }
 
-    const response = NextResponse.redirect(`${origin}/dashboard?xero=connected`);
+    const tenantName = encodeURIComponent(tenant.tenantName || 'Xero');
+    const response = NextResponse.redirect(`${origin}/dashboard?xero=success&tenant=${tenantName}`);
     response.cookies.set('xero_oauth_state', '', {
       path: '/',
       maxAge: 0,

@@ -19,6 +19,7 @@ interface DashboardData {
   invoices: Invoice[];
   upcomingReminders: UpcomingReminder[];
   xeroConnected: boolean;
+  xeroTenantName: string | null;
 }
 
 function parseCurrency(value: string | number | null | undefined) {
@@ -40,6 +41,7 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
   console.log('[getDashboardData] Profile:', { 
     userId, 
     xero_tenant_id: profile?.xero_tenant_id,
+    xero_tenant_name: profile?.xero_tenant_name,
     xero_connected: Boolean(profile?.xero_tenant_id)
   });
 
@@ -57,6 +59,7 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
       invoices: [],
       upcomingReminders: [],
       xeroConnected: false,
+      xeroTenantName: null,
     };
   }
 
@@ -241,6 +244,7 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     invoices,
     upcomingReminders,
     xeroConnected: Boolean(profile?.xero_tenant_id),
+    xeroTenantName: profile?.xero_tenant_name || null,
   };
 
   console.log('[getDashboardData] Final return:', { 

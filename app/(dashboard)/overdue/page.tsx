@@ -121,7 +121,7 @@ export default async function OverduePage() {
           <div className="px-6 py-12">
             <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
               <p className="text-sm text-slate-500">
-                No overdue invoices found. Connect Xero and sync your invoices to see overdue items.
+                No overdue invoices yet. Connect Xero above and click 'Sync now' to get started.
               </p>
             </div>
           </div>

@@ -177,7 +177,7 @@ export default async function InvoicesPage({
             ) : (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-sm text-slate-500">
-                  No invoices found. Connect Xero to start syncing invoices.
+                  No invoices yet. Connect Xero and sync to get started.
                 </td>
               </tr>
             )}

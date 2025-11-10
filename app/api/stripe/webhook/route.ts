@@ -55,20 +55,34 @@ export async function POST(request: Request) {
       const userId = session.metadata?.user_id;
       const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
 
+      console.log('[Stripe Webhook] checkout.session.completed', { userId, customerId, mode: session.mode });
+
       if (userId && customerId) {
+        // If mode is 'subscription', the subscription will be created and we'll get a separate event
+        // For now, just save the customer ID
         await supabase
           .from('profiles')
           .update({
             stripe_customer_id: customerId,
-            subscription_status: 'active',
+            subscription_status: 'active', // Will be updated by subscription.created event
+            updated_at: new Date().toISOString(),
           })
           .eq('id', userId);
+        
+        console.log('[Stripe Webhook] Updated profile with customer ID', { userId, customerId });
       }
       break;
     }
-    case 'customer.subscription.updated': {
+    
+    case 'customer.subscription.created': {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
+      
+      console.log('[Stripe Webhook] customer.subscription.created', { 
+        customerId, 
+        status: subscription.status,
+        trialEnd: subscription.trial_end 
+      });
 
       if (customerId) {
         await supabase
@@ -76,24 +90,104 @@ export async function POST(request: Request) {
           .update({
             subscription_status: mapSubscriptionStatus(subscription.status),
             trial_ends_at: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+            updated_at: new Date().toISOString(),
           })
           .eq('stripe_customer_id', customerId);
+        
+        console.log('[Stripe Webhook] Created subscription for customer', { customerId, status: subscription.status });
       }
       break;
     }
-    case 'customer.subscription.deleted': {
+    
+    case 'customer.subscription.updated': {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
+
+      console.log('[Stripe Webhook] customer.subscription.updated', { 
+        customerId, 
+        status: subscription.status,
+        trialEnd: subscription.trial_end 
+      });
 
       if (customerId) {
         await supabase
           .from('profiles')
-          .update({ subscription_status: 'cancelled' })
+          .update({
+            subscription_status: mapSubscriptionStatus(subscription.status),
+            trial_ends_at: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+            updated_at: new Date().toISOString(),
+          })
           .eq('stripe_customer_id', customerId);
+        
+        console.log('[Stripe Webhook] Updated subscription for customer', { customerId, status: subscription.status });
       }
       break;
     }
+    
+    case 'customer.subscription.deleted': {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
+
+      console.log('[Stripe Webhook] customer.subscription.deleted', { customerId });
+
+      if (customerId) {
+        await supabase
+          .from('profiles')
+          .update({ 
+            subscription_status: 'expired',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_customer_id', customerId);
+        
+        console.log('[Stripe Webhook] Deleted subscription for customer', { customerId });
+      }
+      break;
+    }
+    
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
+
+      console.log('[Stripe Webhook] invoice.payment_failed', { customerId, invoiceId: invoice.id });
+
+      if (customerId) {
+        // Mark subscription as past_due
+        await supabase
+          .from('profiles')
+          .update({ 
+            subscription_status: 'past_due',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_customer_id', customerId);
+        
+        console.log('[Stripe Webhook] Payment failed for customer', { customerId });
+      }
+      break;
+    }
+    
+    case 'invoice.payment_succeeded': {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
+
+      console.log('[Stripe Webhook] invoice.payment_succeeded', { customerId, invoiceId: invoice.id });
+
+      if (customerId) {
+        // If payment succeeded, ensure subscription is active
+        await supabase
+          .from('profiles')
+          .update({ 
+            subscription_status: 'active',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_customer_id', customerId);
+        
+        console.log('[Stripe Webhook] Payment succeeded for customer', { customerId });
+      }
+      break;
+    }
+    
     default:
+      console.log('[Stripe Webhook] Unhandled event type:', event.type);
       break;
   }
 

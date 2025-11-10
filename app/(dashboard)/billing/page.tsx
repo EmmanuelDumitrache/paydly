@@ -1,22 +1,25 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { differenceInCalendarDays } from 'date-fns';
-import { CreditCard, Check } from 'lucide-react';
+import { CreditCard, Check, AlertCircle } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function BillingPage() {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const accessStatus = searchParams.get('access');
 
   // Fetch profile on mount
-  useState(() => {
+  useEffect(() => {
     fetch('/api/profile')
       .then((res) => res.json())
       .then((data) => setProfile(data.profile))
       .catch((err) => setError('Failed to load billing information'));
-  });
+  }, []);
 
   const handleSubscribe = async () => {
     setLoading(true);
@@ -76,6 +79,34 @@ export default function BillingPage() {
         <h1 className="text-2xl font-semibold text-slate-900">Billing & Subscription</h1>
         <p className="mt-1 text-sm text-slate-500">Manage your subscription and payment method</p>
       </div>
+
+      {accessStatus === 'blocked' && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-rose-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-rose-900">Subscription Required</h3>
+              <p className="mt-1 text-sm text-rose-700">
+                Your subscription has expired. Subscribe now to continue using Paydly and access your invoices.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {accessStatus === 'expired' && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-amber-900">Trial Ended</h3>
+              <p className="mt-1 text-sm text-amber-700">
+                Your 14-day trial has ended. Subscribe now to continue using Paydly.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-sm text-rose-700">

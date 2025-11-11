@@ -4,8 +4,9 @@ import { differenceInCalendarDays, format } from 'date-fns';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { updateAccountProfile, updateReminderSchedule } from './actions';
 import { createClient } from '@/lib/supabase/server';
+import { StripeModeToggle } from '@/components/settings/StripeModeToggle';
+import { updateAccountProfile, updateReminderSchedule } from './actions';
 
 export default async function SettingsPage({
   searchParams,
@@ -59,6 +60,8 @@ export default async function SettingsPage({
           {syncMessage}
         </div>
       ) : null}
+
+      <StripeModeToggle />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

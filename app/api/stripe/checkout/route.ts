@@ -1,8 +1,9 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 import { createClient } from '@/lib/supabase/server';
-import { stripe, getStripePriceId } from '@/lib/stripe/client';
+import { getStripeResources, resolveMode } from '@/lib/stripe/client';
 
 export async function POST(request: Request) {
   const supabase = createClient();
@@ -14,7 +15,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const priceId = getStripePriceId();
+  const cookieStore = cookies();
+  const modeCookie = cookieStore.get('stripe_mode')?.value;
+  const mode = resolveMode(modeCookie);
+
+  const { stripe, priceId } = getStripeResources(mode);
+
+  if (!stripe) {
+    return NextResponse.json({ error: 'Stripe secret key not configured for selected mode' }, { status: 500 });
+  }
+
   if (!priceId) {
     return NextResponse.json({ error: 'STRIPE_PRICE_ID not configured' }, { status: 500 });
   }

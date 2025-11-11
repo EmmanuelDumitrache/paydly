@@ -4,9 +4,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 import { createServiceClient } from '@/lib/supabase/service';
-import { stripe, getStripeWebhookSecret } from '@/lib/stripe/client';
-
-const WEBHOOK_SECRET = getStripeWebhookSecret();
+import { getStripeResources } from '@/lib/stripe/client';
 
 function mapSubscriptionStatus(status: Stripe.Subscription.Status): 'active' | 'trialing' | 'cancelled' | 'past_due' {
   switch (status) {
@@ -27,10 +25,6 @@ function mapSubscriptionStatus(status: Stripe.Subscription.Status): 'active' | '
 }
 
 export async function POST(request: Request) {
-  if (!WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'STRIPE_WEBHOOK_SECRET not configured' }, { status: 500 });
-  }
-
   const signature = headers().get('stripe-signature');
   const rawBody = await request.text();
 
@@ -38,13 +32,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing Stripe signature header' }, { status: 400 });
   }
 
-  let event: Stripe.Event;
+  let event: Stripe.Event | null = null;
+  let mode: 'live' | 'test' | null = null;
 
-  try {
-    event = stripe.webhooks.constructEvent(rawBody, signature, WEBHOOK_SECRET);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Invalid webhook signature';
-    return NextResponse.json({ error: message }, { status: 400 });
+  for (const candidate of ['live', 'test'] as const) {
+    const { stripe, webhookSecret } = getStripeResources(candidate);
+    if (!stripe || !webhookSecret) continue;
+
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      mode = candidate;
+      break;
+    } catch (error) {
+      // Try next mode
+    }
+  }
+
+  if (!event || !mode) {
+    return NextResponse.json({ error: 'Invalid webhook signature for all configured Stripe modes' }, { status: 400 });
   }
 
   const supabase = createServiceClient();

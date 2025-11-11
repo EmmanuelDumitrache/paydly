@@ -21,14 +21,15 @@ export async function POST(request: Request) {
 
   const { stripe, priceId } = getStripeResources(mode);
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[Stripe Checkout] Mode resolution', {
-      modeCookie: modeCookie ?? null,
-      resolvedMode: mode,
-      hasStripeClient: Boolean(stripe),
-      hasPriceId: Boolean(priceId),
-    });
-  }
+  // Always log in production for debugging
+  console.log('[Stripe Checkout] Mode resolution', {
+    modeCookie: modeCookie ?? null,
+    resolvedMode: mode,
+    hasStripeClient: Boolean(stripe),
+    hasPriceId: Boolean(priceId),
+    priceId: priceId ?? 'MISSING',
+    allCookies: cookieStore.getAll().map(c => c.name),
+  });
 
   if (!stripe) {
     console.error('[Stripe Checkout] Missing Stripe secret for mode', mode);

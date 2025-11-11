@@ -11,7 +11,9 @@ echo ""
 
 # Load environment variables
 if [ -f .env.local ]; then
-  export $(grep -v '^#' .env.local | xargs)
+  set -a
+  source .env.local
+  set +a
 fi
 
 # Check if CRON_SECRET is set

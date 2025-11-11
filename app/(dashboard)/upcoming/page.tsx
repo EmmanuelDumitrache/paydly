@@ -1,66 +1,90 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
-import { getDashboardData } from '@/lib/data/dashboard';
 import { createClient } from '@/lib/supabase/server';
-
-type ReminderSchedule = {
-  id: string;
-  invoiceNumber: string;
-  clientName: string;
-  reminderType: 'day_7' | 'day_14' | 'day_21';
-  scheduledFor: string;
-};
-
-const LABELS: Record<ReminderSchedule['reminderType'], string> = {
-  day_7: '7-day reminder',
-  day_14: '14-day reminder',
-  day_21: '21-day reminder',
-};
+import { fetchUpcomingInvoices } from '@/lib/data/upcoming';
+import { SendPreReminderButton } from '@/components/upcoming/SendPreReminderButton';
 
 export default async function UpcomingPage() {
   const supabase = createClient();
-  const { upcomingReminders } = await getDashboardData(supabase);
+  const upcomingInvoices = await fetchUpcomingInvoices(supabase);
 
-  console.log('[UpcomingPage] Rendering with reminders:', upcomingReminders);
+  console.log('[UpcomingPage] Rendering with', upcomingInvoices.length, 'upcoming invoices');
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Upcoming Reminders</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Upcoming Invoices</h1>
         <p className="text-sm text-slate-500">
-          {upcomingReminders.length 
-            ? `${upcomingReminders.length} reminder${upcomingReminders.length === 1 ? '' : 's'} scheduled to be sent in the next 24 hours` 
-            : 'No reminders scheduled for the next 24 hours'}
+          {upcomingInvoices.length 
+            ? `${upcomingInvoices.length} invoice${upcomingInvoices.length === 1 ? '' : 's'} due in the future` 
+            : 'No upcoming invoices'}
         </p>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        {upcomingReminders.length ? (
-          <ul className="space-y-4">
-            {upcomingReminders.map((reminder) => (
-              <li 
-                key={reminder.id} 
-                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Invoice {reminder.invoiceNumber}
-                  </p>
-                  <p className="text-xs text-slate-500">{reminder.clientName}</p>
-                </div>
-                <div className="text-right text-xs text-slate-500">
-                  <p className="font-semibold text-indigo-600">
-                    {LABELS[reminder.reminderType]}
-                  </p>
-                  <p>{reminder.scheduledFor}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        {upcomingInvoices.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Invoice
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Client
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Due Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Days Until Due
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-200">
+                {upcomingInvoices.map((invoice) => (
+                  <tr key={invoice.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                      {invoice.invoice_number}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                      {invoice.contact_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                      {invoice.currency_code} ${invoice.amount_due.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                      {new Date(invoice.due_date).toLocaleDateString('en-AU', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {invoice.days_until_due} {invoice.days_until_due === 1 ? 'day' : 'days'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <SendPreReminderButton invoice={invoice} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
-            <p className="text-sm text-slate-500">
-              No reminders scheduled yet. Connect Xero above and click &apos;Sync now&apos; to get started.
-            </p>
+          <div className="px-6 py-12">
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
+              <p className="text-sm text-slate-500">
+                No upcoming invoices yet. Connect Xero above and click &apos;Sync now&apos; to get started.
+              </p>
+            </div>
           </div>
         )}
       </div>

@@ -5,14 +5,16 @@ interface TemplateContext {
   currency: string;
   due_date: string;
   company_name: string;
+  days_until_due?: number; // For pre-reminders
 }
 
-export type ReminderType = 'day_7' | 'day_14' | 'day_21';
+export type ReminderType = 'day_7' | 'day_14' | 'day_21' | 'pre_reminder';
 
 const SUBJECTS: Record<ReminderType, string> = {
   day_7: 'Friendly reminder - Invoice {invoice_number}',
   day_14: 'Payment overdue - Invoice {invoice_number}',
   day_21: 'Final notice - Invoice {invoice_number}',
+  pre_reminder: 'Upcoming payment - Invoice {invoice_number}',
 };
 
 const BODY_COPY: Record<ReminderType, string> = {
@@ -68,6 +70,23 @@ Regards,
 
 ---
 This reminder was sent automatically by Paydly`,
+  pre_reminder: `Hi {contact_name},
+
+Just a friendly heads up that invoice {invoice_number} for ${'{amount}'} is due in {days_until_due} days.
+
+This is a courtesy reminder to help you plan ahead. No action is required right now, but payment will be due on {due_date}.
+
+Invoice details:
+- Invoice #: {invoice_number}
+- Amount: ${'{amount}'} {currency}
+- Due date: {due_date} ({days_until_due} days from now)
+
+Thanks for your business!
+
+{company_name}
+
+---
+This reminder was sent automatically by Paydly`,
 };
 
 function formatAmount(amount: number) {
@@ -75,13 +94,20 @@ function formatAmount(amount: number) {
 }
 
 function interpolate(template: string, context: TemplateContext) {
-  return template
+  let result = template
     .replaceAll('{invoice_number}', context.invoice_number)
     .replaceAll('{contact_name}', context.contact_name)
     .replaceAll('{amount}', formatAmount(context.amount))
     .replaceAll('{currency}', context.currency)
     .replaceAll('{due_date}', context.due_date)
     .replaceAll('{company_name}', context.company_name);
+  
+  // Handle days_until_due for pre-reminders
+  if (context.days_until_due !== undefined) {
+    result = result.replaceAll('{days_until_due}', context.days_until_due.toString());
+  }
+  
+  return result;
 }
 
 export function getReminderTemplate(type: ReminderType, context: TemplateContext) {

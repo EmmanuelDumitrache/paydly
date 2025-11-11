@@ -13,17 +13,23 @@ export function StripeModeToggle() {
   useEffect(() => {
     let isMounted = true;
 
+    console.log('[Stripe Toggle] Fetching current mode…');
+
     fetch('/api/stripe/mode')
       .then((res) => res.json())
       .then((data) => {
         if (!isMounted) return;
         if (data?.mode === 'test' || data?.mode === 'live') {
           setMode(data.mode);
+          console.log('[Stripe Toggle] Loaded mode', data.mode);
+        } else {
+          console.warn('[Stripe Toggle] Unexpected mode payload', data);
         }
       })
       .catch(() => {
         if (isMounted) {
           setError('Unable to load Stripe mode');
+          console.error('[Stripe Toggle] Failed to fetch current mode');
         }
       })
       .finally(() => {
@@ -37,6 +43,8 @@ export function StripeModeToggle() {
 
   const handleToggle = async (nextMode: StripeMode) => {
     if (loading || nextMode === mode) return;
+
+    console.log('[Stripe Toggle] Attempting mode change', { from: mode, to: nextMode });
 
     setLoading(true);
     setError(null);
@@ -56,9 +64,13 @@ export function StripeModeToggle() {
       const data = await res.json();
       if (data?.mode === 'test' || data?.mode === 'live') {
         setMode(data.mode);
+        console.log('[Stripe Toggle] Mode updated', { previous: mode, current: data.mode });
+      } else {
+        console.warn('[Stripe Toggle] Unexpected response when updating mode', data);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
+      console.error('[Stripe Toggle] Failed to update mode', err);
     } finally {
       setLoading(false);
     }

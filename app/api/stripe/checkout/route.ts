@@ -21,11 +21,22 @@ export async function POST(request: Request) {
 
   const { stripe, priceId } = getStripeResources(mode);
 
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[Stripe Checkout] Mode resolution', {
+      modeCookie: modeCookie ?? null,
+      resolvedMode: mode,
+      hasStripeClient: Boolean(stripe),
+      hasPriceId: Boolean(priceId),
+    });
+  }
+
   if (!stripe) {
+    console.error('[Stripe Checkout] Missing Stripe secret for mode', mode);
     return NextResponse.json({ error: 'Stripe secret key not configured for selected mode' }, { status: 500 });
   }
 
   if (!priceId) {
+    console.error('[Stripe Checkout] Missing price ID for mode', mode);
     return NextResponse.json({ error: 'STRIPE_PRICE_ID not configured' }, { status: 500 });
   }
 
@@ -66,6 +77,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to create checkout session';
+    console.error('[Stripe Checkout] Error creating session', {
+      mode,
+      priceId,
+      message,
+    });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

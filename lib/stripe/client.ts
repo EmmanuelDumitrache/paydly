@@ -31,14 +31,33 @@ function getWebhookSecret(mode: StripeMode): string | undefined {
 export function resolveMode(
   override?: string | null | undefined
 ): StripeMode {
-  if (override === 'test' || override === 'live') return override;
-  return DEFAULT_MODE;
+  const mode =
+    override === 'test' || override === 'live' ? override : DEFAULT_MODE;
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[Stripe] resolveMode', {
+      override: override ?? null,
+      resolved: mode,
+      defaultMode: DEFAULT_MODE,
+    });
+  }
+
+  return mode;
 }
 
 export function getStripeResources(mode: StripeMode) {
   const secret = getSecretKey(mode);
   const priceId = getPriceId(mode);
   const webhookSecret = getWebhookSecret(mode);
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[Stripe] getStripeResources', {
+      mode,
+      hasSecret: Boolean(secret),
+      hasPriceId: Boolean(priceId),
+      hasWebhookSecret: Boolean(webhookSecret),
+    });
+  }
 
   if (!secret) {
     return { stripe: null as Stripe | null, priceId, webhookSecret };

@@ -42,13 +42,25 @@ export async function POST(request: Request) {
     try {
       event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
       mode = candidate;
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[Stripe Webhook] Signature verified', {
+          attemptedMode: candidate,
+          eventType: event.type,
+        });
+      }
       break;
     } catch (error) {
-      // Try next mode
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[Stripe Webhook] Signature verification failed for mode', {
+          attemptedMode: candidate,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
     }
   }
 
   if (!event || !mode) {
+    console.error('[Stripe Webhook] Unable to verify signature for any mode');
     return NextResponse.json({ error: 'Invalid webhook signature for all configured Stripe modes' }, { status: 400 });
   }
 
@@ -60,7 +72,7 @@ export async function POST(request: Request) {
       const userId = session.metadata?.user_id;
       const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
 
-      console.log('[Stripe Webhook] checkout.session.completed', { userId, customerId, mode: session.mode });
+      console.log('[Stripe Webhook] checkout.session.completed', { userId, customerId, mode: session.mode, resolvedMode: mode });
 
       if (userId && customerId) {
         // If mode is 'subscription', the subscription will be created and we'll get a separate event
@@ -86,7 +98,8 @@ export async function POST(request: Request) {
       console.log('[Stripe Webhook] customer.subscription.created', { 
         customerId, 
         status: subscription.status,
-        trialEnd: subscription.trial_end 
+        trialEnd: subscription.trial_end,
+        resolvedMode: mode,
       });
 
       if (customerId) {
@@ -111,7 +124,8 @@ export async function POST(request: Request) {
       console.log('[Stripe Webhook] customer.subscription.updated', { 
         customerId, 
         status: subscription.status,
-        trialEnd: subscription.trial_end 
+        trialEnd: subscription.trial_end,
+        resolvedMode: mode,
       });
 
       if (customerId) {
@@ -133,7 +147,7 @@ export async function POST(request: Request) {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
 
-      console.log('[Stripe Webhook] customer.subscription.deleted', { customerId });
+      console.log('[Stripe Webhook] customer.subscription.deleted', { customerId, resolvedMode: mode });
 
       if (customerId) {
         await supabase
@@ -153,7 +167,7 @@ export async function POST(request: Request) {
       const invoice = event.data.object as Stripe.Invoice;
       const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
 
-      console.log('[Stripe Webhook] invoice.payment_failed', { customerId, invoiceId: invoice.id });
+      console.log('[Stripe Webhook] invoice.payment_failed', { customerId, invoiceId: invoice.id, resolvedMode: mode });
 
       if (customerId) {
         // Mark subscription as past_due
@@ -174,7 +188,7 @@ export async function POST(request: Request) {
       const invoice = event.data.object as Stripe.Invoice;
       const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
 
-      console.log('[Stripe Webhook] invoice.payment_succeeded', { customerId, invoiceId: invoice.id });
+      console.log('[Stripe Webhook] invoice.payment_succeeded', { customerId, invoiceId: invoice.id, resolvedMode: mode });
 
       if (customerId) {
         // If payment succeeded, ensure subscription is active
@@ -192,7 +206,7 @@ export async function POST(request: Request) {
     }
     
     default:
-      console.log('[Stripe Webhook] Unhandled event type:', event.type);
+      console.log('[Stripe Webhook] Unhandled event type:', event.type, { resolvedMode: mode });
       break;
   }
 

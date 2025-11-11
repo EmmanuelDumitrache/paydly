@@ -59,7 +59,7 @@ export default async function UpcomingPage() {
         ) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
             <p className="text-sm text-slate-500">
-              No reminders scheduled yet. Connect Xero above and click 'Sync now' to get started.
+              No reminders scheduled yet. Connect Xero above and click &apos;Sync now&apos; to get started.
             </p>
           </div>
         )}

@@ -77,7 +77,7 @@ export function FAQ() {
             <a href="mailto:hello@paydly.io" className="font-semibold text-indigo-600 hover:text-indigo-500">
               Email us
             </a>{' '}
-            and we'll get back to you within 24 hours.
+            and we&apos;ll get back to you within 24 hours.
           </p>
         </div>
       </div>

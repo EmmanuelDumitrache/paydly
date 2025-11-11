@@ -4,9 +4,9 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 import { createServiceClient } from '@/lib/supabase/service';
-import { stripe } from '@/lib/stripe/client';
+import { stripe, getStripeWebhookSecret } from '@/lib/stripe/client';
 
-const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const WEBHOOK_SECRET = getStripeWebhookSecret();
 
 function mapSubscriptionStatus(status: Stripe.Subscription.Status): 'active' | 'trialing' | 'cancelled' | 'past_due' {
   switch (status) {

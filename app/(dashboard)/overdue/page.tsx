@@ -5,7 +5,7 @@ import { format, formatDistanceToNowStrict } from 'date-fns';
 import { getDashboardData } from '@/lib/data/dashboard';
 import { createClient } from '@/lib/supabase/server';
 import type { Invoice } from '@/types';
-import { SendReminderButton } from '@/components/overdue/SendReminderButton';
+import { OverdueInvoiceActions } from '@/components/overdue/OverdueInvoiceActions';
 
 function getStatusBadge(status: Invoice['status'], daysOverdue: number) {
   if (status === 'PAID') {
@@ -98,14 +98,10 @@ export default async function OverduePage() {
                           : 'Not sent'}
                       </td>
                       <td className="px-4 py-4 text-right">
-                        <div className="flex flex-col gap-2 items-end">
-                          <SendReminderButton
-                            invoiceId={invoice.id}
-                            invoiceNumber={invoice.invoice_number}
-                            contactEmail={invoice.contact_email}
-                            fallbackEmail={profile?.email ?? null}
-                          />
-                        </div>
+                        <OverdueInvoiceActions
+                          invoice={invoice}
+                          fallbackEmail={profile?.email ?? null}
+                        />
                       </td>
                     </tr>
                   );

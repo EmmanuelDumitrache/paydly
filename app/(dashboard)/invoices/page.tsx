@@ -4,6 +4,7 @@ import { format, formatDistanceToNowStrict } from 'date-fns';
 import { fetchInvoices, type InvoiceStatusFilter } from '@/lib/data/invoices';
 import { createClient } from '@/lib/supabase/server';
 import type { Invoice } from '@/types';
+import { InvoicesPageActions } from '@/components/invoices/InvoicesPageActions';
 
 const PAGE_SIZE = 20;
 const STATUS_TABS: { value: InvoiceStatusFilter; label: string }[] = [
@@ -168,22 +169,7 @@ export default async function InvoicesPage({
                       </div>
                     </td>
                     <td className="px-4 py-4 text-right">
-                      <div className="flex flex-col gap-2 items-end">
-                        <button
-                          type="button"
-                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-600 transition"
-                        >
-                          {invoice.reminders_paused ? 'Resume' : 'Pause'}
-                        </button>
-                        <a
-                          href={`https://go.xero.com/AccountsReceivable/Edit.aspx?invoiceID=${invoice.xero_invoice_id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-600 transition"
-                        >
-                          View in Xero
-                        </a>
-                      </div>
+                      <InvoicesPageActions invoice={invoice} />
                     </td>
                   </tr>
                 );

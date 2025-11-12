@@ -1,7 +1,7 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { createClient } from '@/lib/supabase/server';
 import { fetchUpcomingInvoices } from '@/lib/data/upcoming';
-import { SendPreReminderButton } from '@/components/upcoming/SendPreReminderButton';
+import { UpcomingInvoiceActions } from '@/components/upcoming/UpcomingInvoiceActions';
 
 export default async function UpcomingPage() {
   const supabase = createClient();
@@ -70,7 +70,7 @@ export default async function UpcomingPage() {
                       </span>
                     </td>
                     <td className="px-4 py-4 text-right text-sm">
-                      <SendPreReminderButton invoice={invoice} />
+                      <UpcomingInvoiceActions invoice={invoice} />
                     </td>
                   </tr>
                 ))}

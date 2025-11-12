@@ -126,65 +126,6 @@ export default async function SettingsPage({
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Reminder schedule</h2>
-            <p className="mt-1 text-sm text-slate-500">Control when Paydly sends reminders for overdue invoices.</p>
-          </div>
-        </div>
-        <form action={updateReminderSchedule} className="mt-6 space-y-4">
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-indigo-200">
-            <input
-              type="checkbox"
-              name="day_7_enabled"
-              defaultChecked={reminderSettings?.day_7_enabled ?? true}
-              className="mt-1 h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span>
-              <span className="block text-sm font-semibold text-slate-900">7-day reminder</span>
-              <span className="text-sm text-slate-500">
-                A friendly reminder sent the first week an invoice is overdue.
-              </span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-indigo-200">
-            <input
-              type="checkbox"
-              name="day_14_enabled"
-              defaultChecked={reminderSettings?.day_14_enabled ?? true}
-              className="mt-1 h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span>
-              <span className="block text-sm font-semibold text-slate-900">14-day reminder</span>
-              <span className="text-sm text-slate-500">
-                A firmer follow-up for invoices that remain unpaid after two weeks.
-              </span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-indigo-200">
-            <input
-              type="checkbox"
-              name="day_21_enabled"
-              defaultChecked={reminderSettings?.day_21_enabled ?? true}
-              className="mt-1 h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span>
-              <span className="block text-sm font-semibold text-slate-900">21-day reminder</span>
-              <span className="text-sm text-slate-500">
-                Final notice to ensure clients settle outstanding invoices.
-              </span>
-            </span>
-          </label>
-          <button
-            type="submit"
-            className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
-          >
-            Save schedule
-          </button>
-        </form>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
             <h2 className="text-lg font-semibold text-slate-900">Email templates</h2>
             <p className="mt-1 text-sm text-slate-500">
               Custom templates are coming soon. For now we’ll use the Paydly defaults.

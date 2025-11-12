@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
-import { StripeModeToggle } from '@/components/settings/StripeModeToggle';
 import { GlobalPauseToggle } from '@/components/settings/GlobalPauseToggle';
 import { CustomIntervals } from '@/components/settings/CustomIntervals';
 import { updateAccountProfile, updateReminderSchedule } from './actions';
@@ -62,8 +61,6 @@ export default async function SettingsPage({
           {syncMessage}
         </div>
       ) : null}
-
-      <StripeModeToggle />
 
       <GlobalPauseToggle 
         initialPaused={reminderSettings?.reminders_globally_paused ?? false}

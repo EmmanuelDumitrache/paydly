@@ -11,7 +11,7 @@ const NAV_LINKS = [
   { href: '#pricing', label: 'Pricing' },
 ];
 
-const HIDDEN_PREFIXES = ['/dashboard', '/invoices', '/settings', '/billing'];
+const HIDDEN_PREFIXES = ['/dashboard', '/invoices', '/settings', '/billing', '/upcoming', '/overdue', '/support'];
 
 export function Header() {
   const pathname = usePathname();

@@ -52,7 +52,7 @@ export function SendPreReminderButton({ invoice }: SendPreReminderButtonProps) {
     return (
       <button
         disabled
-        className="inline-flex items-center gap-2 rounded-lg bg-green-100 px-3 py-1.5 text-xs font-medium text-green-700"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700"
       >
         <Check className="h-3.5 w-3.5" />
         Sent
@@ -64,7 +64,7 @@ export function SendPreReminderButton({ invoice }: SendPreReminderButtonProps) {
     return (
       <button
         onClick={handleSend}
-        className="inline-flex items-center gap-2 rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 transition"
         title={errorMessage || 'Click to retry'}
       >
         <AlertCircle className="h-3.5 w-3.5" />
@@ -77,10 +77,10 @@ export function SendPreReminderButton({ invoice }: SendPreReminderButtonProps) {
     <button
       onClick={handleSend}
       disabled={loading}
-      className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <Send className="h-3.5 w-3.5" />
-      {loading ? 'Sending...' : 'Send Pre-Reminder'}
+      {loading ? 'Sending...' : 'Send'}
     </button>
   );
 }

@@ -8,7 +8,8 @@ import {
   ListChecks, 
   Settings,
   Clock,
-  AlertCircle
+  AlertCircle,
+  HelpCircle
 } from 'lucide-react';
 
 interface NavItem {
@@ -24,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/invoices', label: 'Invoices', icon: ListChecks },
   { href: '/settings', label: 'Settings', icon: Settings },
   { href: '/billing', label: 'Billing', icon: CreditCard },
+  { href: '/support', label: 'Support', icon: HelpCircle },
 ];
 
 export function SidebarNav() {

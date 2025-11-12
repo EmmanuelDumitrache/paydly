@@ -23,54 +23,53 @@ export default async function UpcomingPage() {
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         {upcomingInvoices.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Invoice
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Client
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Due Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Days Until Due
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-200 bg-white">
                 {upcomingInvoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                  <tr key={invoice.id} className="hover:bg-slate-50 transition">
+                    <td className="px-4 py-4 text-sm font-medium text-slate-900">
                       {invoice.invoice_number}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
-                      {invoice.contact_name}
+                    <td className="px-4 py-4 text-sm text-slate-700">
+                      <div className="max-w-[200px] truncate">{invoice.contact_name}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                    <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap text-sm text-slate-700">
                       {invoice.currency_code} ${invoice.amount_due.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700">
                       {new Date(invoice.due_date).toLocaleDateString('en-AU', {
-                        year: 'numeric',
                         month: 'short',
                         day: 'numeric',
                       })}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {invoice.days_until_due} {invoice.days_until_due === 1 ? 'day' : 'days'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                    <td className="px-4 py-4 text-right text-sm">
                       <SendPreReminderButton invoice={invoice} />
                     </td>
                   </tr>

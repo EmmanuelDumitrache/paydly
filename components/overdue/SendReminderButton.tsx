@@ -57,20 +57,15 @@ export function SendReminderButton({
   };
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <button
         onClick={handleSend}
-        disabled={loading}
-        className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={loading || !targetEmail}
+        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <Mail className="h-3 w-3" />
-        {loading ? 'Sending...' : 'Send Reminder'}
+        <Mail className="h-3.5 w-3.5" />
+        {loading ? 'Sending...' : 'Send'}
       </button>
-      <span className="text-[10px] text-slate-400">
-        {targetEmail
-          ? `Will send to ${targetEmail}`
-          : 'Add a client email in Xero and re-sync before sending.'}
-      </span>
       {message && (
         <span className={`text-xs ${message.type === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>
           {message.text}

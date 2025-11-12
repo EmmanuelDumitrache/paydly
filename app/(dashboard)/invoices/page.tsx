@@ -104,19 +104,19 @@ export default async function InvoicesPage({
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <table className="min-w-full divide-y divide-slate-200">
+          <thead className="bg-slate-50">
             <tr>
-              <th scope="col" className="px-6 py-3">Invoice</th>
-              <th scope="col" className="px-6 py-3">Client</th>
-              <th scope="col" className="px-6 py-3">Amount</th>
-              <th scope="col" className="px-6 py-3">Due date</th>
-              <th scope="col" className="px-6 py-3">Days overdue</th>
-              <th scope="col" className="px-6 py-3">Reminder status</th>
-              <th scope="col" className="px-6 py-3">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Invoice</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Client</th>
+              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Amount</th>
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Due date</th>
+              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Days overdue</th>
+              <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Reminder status</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wide">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-200 bg-white">
             {invoices.length ? (
               invoices.map((invoice) => {
                 const reminderStatus = getReminderStatus(invoice);
@@ -128,30 +128,38 @@ export default async function InvoicesPage({
                   : 'bg-amber-100 text-amber-700';
 
                 return (
-                  <tr key={invoice.id}>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${statusClass}`}>
+                  <tr key={invoice.id} className="hover:bg-slate-50 transition">
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium text-slate-900">{invoice.invoice_number}</span>
+                        <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusClass}`}>
                           {invoice.status === 'PAID' ? 'Paid' : overdue ? 'Overdue' : 'Due soon'}
                         </span>
-                        <span className="font-semibold text-slate-900">{invoice.invoice_number}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{invoice.contact_name}</div>
-                      <div className="text-xs text-slate-500">{invoice.contact_email ?? 'No email'}</div>
+                    <td className="px-4 py-4">
+                      <div className="max-w-[180px]">
+                        <div className="text-sm font-medium text-slate-900 truncate">{invoice.contact_name}</div>
+                        <div className="text-xs text-slate-500 truncate">{invoice.contact_email ?? 'No email'}</div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 font-semibold text-slate-900">
-                      ${invoice.amount_due.toFixed(2)} {invoice.currency_code}
+                    <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">
+                      ${invoice.amount_due.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 text-slate-600">{format(new Date(invoice.due_date), 'd MMM yyyy')}</td>
-                    <td className="px-6 py-4 text-slate-600">{invoice.days_overdue} days</td>
-                    <td className="px-6 py-4 text-slate-500">{reminderStatus}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2">
+                    <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm text-slate-600">
+                      {format(new Date(invoice.due_date), 'd MMM')}
+                    </td>
+                    <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap text-sm text-slate-600">
+                      {invoice.days_overdue}d
+                    </td>
+                    <td className="hidden xl:table-cell px-4 py-4 text-sm text-slate-500">
+                      <div className="max-w-[150px] truncate">{reminderStatus}</div>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <div className="flex flex-col gap-2 items-end">
                         <button
                           type="button"
-                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-indigo-500 hover:text-indigo-600"
+                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-600 transition"
                         >
                           {invoice.reminders_paused ? 'Resume' : 'Pause'}
                         </button>
@@ -159,16 +167,10 @@ export default async function InvoicesPage({
                           href={`https://go.xero.com/AccountsReceivable/Edit.aspx?invoiceID=${invoice.xero_invoice_id}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-indigo-500 hover:text-indigo-600"
+                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-500 hover:text-indigo-600 transition"
                         >
                           View in Xero
                         </a>
-                        <button
-                          type="button"
-                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-indigo-500 hover:text-indigo-600"
-                        >
-                          Mark as paid
-                        </button>
                       </div>
                     </td>
                   </tr>

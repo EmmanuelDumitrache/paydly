@@ -110,9 +110,15 @@ export default async function InvoicesPage({
               <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Invoice</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Client</th>
               <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Amount</th>
-              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Due date</th>
-              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Days overdue</th>
-              <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Reminder status</th>
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {status === 'paid' ? 'Date paid' : 'Due date'}
+              </th>
+              {status !== 'paid' && (
+                <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Days overdue</th>
+              )}
+              <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {status === 'paid' ? 'Status' : 'Reminder status'}
+              </th>
               <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wide">Actions</th>
             </tr>
           </thead>
@@ -147,13 +153,19 @@ export default async function InvoicesPage({
                       ${invoice.amount_due.toFixed(2)}
                     </td>
                     <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {format(new Date(invoice.due_date), 'd MMM')}
+                      {status === 'paid' 
+                        ? format(new Date(invoice.updated_at), 'd MMM yyyy')
+                        : format(new Date(invoice.due_date), 'd MMM')}
                     </td>
-                    <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {invoice.days_overdue}d
-                    </td>
+                    {status !== 'paid' && (
+                      <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap text-sm text-slate-600">
+                        {invoice.days_overdue}d
+                      </td>
+                    )}
                     <td className="hidden xl:table-cell px-4 py-4 text-sm text-slate-500">
-                      <div className="max-w-[150px] truncate">{reminderStatus}</div>
+                      <div className="max-w-[150px] truncate">
+                        {status === 'paid' ? 'Paid' : reminderStatus}
+                      </div>
                     </td>
                     <td className="px-4 py-4 text-right">
                       <div className="flex flex-col gap-2 items-end">

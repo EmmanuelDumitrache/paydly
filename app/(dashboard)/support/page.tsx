@@ -26,7 +26,7 @@ export default function SupportPage({
             <CheckCircle className="h-5 w-5 text-emerald-600" />
             <div>
               <p className="text-sm font-semibold text-emerald-900">Message sent successfully!</p>
-              <p className="text-sm text-emerald-700">We'll get back to you within 24-48 hours.</p>
+              <p className="text-sm text-emerald-700">We&apos;ll get back to you within 24-48 hours.</p>
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function SupportPage({
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Send us a message</h2>
         <p className="mt-1 text-sm text-slate-500">
-          We'll get back to you as soon as possible
+          We&apos;ll get back to you as soon as possible
         </p>
 
         <form action={sendSupportEmail} className="mt-6 space-y-4">

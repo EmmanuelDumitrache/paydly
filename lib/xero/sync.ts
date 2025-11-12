@@ -28,7 +28,7 @@ function parseXeroDate(raw: string | null | undefined): Date | null {
 export async function syncXeroInvoicesForUser(
   supabase: SupabaseServerClient,
   userId: string
-): Promise<{ synced: number; message: string }> {
+): Promise<{ synced: number; message: string; newInvoices: number; updatedInvoices: number }> {
   console.info('[xero-sync] Starting invoice sync', { userId });
 
   const { data: profile, error: profileError } = await supabase
@@ -148,6 +148,37 @@ export async function syncXeroInvoicesForUser(
     rows: rows.length,
   });
 
+  // Get existing invoice IDs to determine new vs updated
+  const xeroInvoiceIds = rows.map(r => r.xero_invoice_id);
+  const { data: existingInvoices } = await supabase
+    .from('invoices')
+    .select('xero_invoice_id, status')
+    .eq('user_id', userId)
+    .in('xero_invoice_id', xeroInvoiceIds);
+
+  const existingIds = new Set(existingInvoices?.map(inv => inv.xero_invoice_id) || []);
+  const existingStatusMap = new Map(existingInvoices?.map(inv => [inv.xero_invoice_id, inv.status]) || []);
+  
+  let newInvoices = 0;
+  let updatedInvoices = 0;
+  let paidUpdates = 0;
+
+  rows.forEach(row => {
+    if (existingIds.has(row.xero_invoice_id)) {
+      updatedInvoices++;
+      const oldStatus = existingStatusMap.get(row.xero_invoice_id);
+      if (oldStatus !== 'PAID' && row.status === 'PAID') {
+        paidUpdates++;
+        console.log('[xero-sync] Invoice marked as PAID:', { 
+          invoiceNumber: row.invoice_number,
+          xeroInvoiceId: row.xero_invoice_id 
+        });
+      }
+    } else {
+      newInvoices++;
+    }
+  });
+
   const { error: upsertError } = await supabase
     .from('invoices')
     .upsert(rows, { onConflict: 'user_id,xero_invoice_id' });
@@ -168,11 +199,25 @@ export async function syncXeroInvoicesForUser(
   console.info('[xero-sync] Sync completed successfully', {
     userId,
     synced: rows.length,
+    newInvoices,
+    updatedInvoices,
+    paidUpdates,
   });
+
+  let message = `Successfully synced ${rows.length} invoice${rows.length === 1 ? '' : 's'}`;
+  if (newInvoices > 0 || updatedInvoices > 0) {
+    const parts = [];
+    if (newInvoices > 0) parts.push(`${newInvoices} new`);
+    if (updatedInvoices > 0) parts.push(`${updatedInvoices} updated`);
+    if (paidUpdates > 0) parts.push(`${paidUpdates} marked paid`);
+    message += ` (${parts.join(', ')})`;
+  }
 
   return {
     synced: rows.length,
-    message: `Successfully synced ${rows.length} invoice${rows.length === 1 ? '' : 's'}`,
+    newInvoices,
+    updatedInvoices,
+    message,
   };
 }
 

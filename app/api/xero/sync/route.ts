@@ -56,6 +56,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       synced: result.synced,
+      newInvoices: result.newInvoices,
+      updatedInvoices: result.updatedInvoices,
       message: result.message,
     });
   } catch (syncError) {

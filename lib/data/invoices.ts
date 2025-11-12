@@ -35,6 +35,8 @@ export async function fetchInvoices(
   const to = from + pageSize - 1;
   const today = formatISO(new Date(), { representation: 'date' });
 
+  console.log('[fetchInvoices] Query params:', { status, search, page, pageSize, today });
+
   let query = supabase
     .from('invoices')
     .select('*', { count: 'exact' })
@@ -46,6 +48,7 @@ export async function fetchInvoices(
   }
 
   if (status === 'paid') {
+    console.log('[fetchInvoices] Filtering for PAID invoices');
     query = query.eq('status', 'PAID');
   }
 
@@ -55,6 +58,14 @@ export async function fetchInvoices(
   }
 
   const { data, error, count } = await query;
+  
+  console.log('[fetchInvoices] Query result:', { 
+    status, 
+    count, 
+    dataLength: data?.length,
+    error: error?.message,
+    sampleStatuses: data?.slice(0, 3).map(inv => ({ id: inv.id, status: inv.status }))
+  });
 
   if (error) {
     throw error;

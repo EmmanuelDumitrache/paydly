@@ -18,7 +18,7 @@ export function DashboardLayoutClient({
   xeroTenantName,
   lastSyncAt,
 }: DashboardLayoutClientProps) {
-  const { sync, reset, status, message, isSyncing } = useSyncInvoices();
+  const { sync, reset, status, message, details, isSyncing } = useSyncInvoices();
 
   const handleSync = () => {
     if (!xeroConnected) return;
@@ -43,6 +43,7 @@ export function DashboardLayoutClient({
         isOpen={status !== 'idle'}
         status={status === 'idle' ? null : status}
         message={message}
+        details={details}
         onClose={handleCloseOverlay}
       />
     </>

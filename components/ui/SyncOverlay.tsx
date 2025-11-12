@@ -3,14 +3,21 @@
 import { RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+interface SyncDetails {
+  synced: number;
+  newInvoices: number;
+  updatedInvoices: number;
+}
+
 interface SyncOverlayProps {
   isOpen: boolean;
   status: 'syncing' | 'success' | 'error' | null;
   message?: string;
+  details?: SyncDetails | null;
   onClose?: () => void;
 }
 
-export function SyncOverlay({ isOpen, status, message, onClose }: SyncOverlayProps) {
+export function SyncOverlay({ isOpen, status, message, details, onClose }: SyncOverlayProps) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -85,10 +92,34 @@ export function SyncOverlay({ isOpen, status, message, onClose }: SyncOverlayPro
 
         {/* Success/Error Details */}
         {status === 'success' && (
-          <div className="mt-4 rounded-lg bg-emerald-50 p-3">
-            <p className="text-center text-sm text-emerald-700">
-              Your invoices are up to date
-            </p>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-lg bg-emerald-50 p-3">
+              <p className="text-center text-sm font-medium text-emerald-700">
+                Your invoices are up to date
+              </p>
+            </div>
+            {details && (details.newInvoices > 0 || details.updatedInvoices > 0) && (
+              <div className="rounded-lg border border-slate-200 bg-white p-3">
+                <div className="space-y-2 text-sm">
+                  {details.newInvoices > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600">New invoices detected:</span>
+                      <span className="font-semibold text-indigo-600">{details.newInvoices}</span>
+                    </div>
+                  )}
+                  {details.updatedInvoices > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600">Invoices updated:</span>
+                      <span className="font-semibold text-slate-900">{details.updatedInvoices}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-2">
+                    <span className="font-medium text-slate-700">Total synced:</span>
+                    <span className="font-bold text-slate-900">{details.synced}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

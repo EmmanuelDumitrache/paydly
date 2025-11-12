@@ -111,10 +111,10 @@ export async function fetchXeroInvoices(
   accessToken: string,
   tenantId: string
 ): Promise<XeroInvoice[]> {
-  // Fetch all invoices that have an amount due (not fully paid)
-  // Include AUTHORISED and SUBMITTED statuses
+  // Fetch all invoices including PAID ones (exclude only VOIDED)
+  // This allows us to track when invoices are marked as paid
   const params = new URLSearchParams({
-    where: 'Status!="PAID"&&Status!="VOIDED"&&AmountDue>0',
+    where: 'Status!="VOIDED"',
     order: 'DueDate DESC',
   });
 
@@ -133,6 +133,13 @@ export async function fetchXeroInvoices(
   }
 
   const json = await response.json();
+  console.log('[fetchXeroInvoices] Fetched invoices:', {
+    total: json.Invoices?.length || 0,
+    statusBreakdown: json.Invoices?.reduce((acc: any, inv: any) => {
+      acc[inv.Status] = (acc[inv.Status] || 0) + 1;
+      return acc;
+    }, {}),
+  });
   return (json.Invoices ?? []) as XeroInvoice[];
 }
 

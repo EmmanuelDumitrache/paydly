@@ -35,21 +35,21 @@ export async function GET() {
   const weekStart = startOfWeek(now, { weekStartsOn: 1 }).toISOString();
   const monthStart = startOfMonth(now).toISOString();
 
-  const { data: todayLogs } = await supabase
+  const { count: todayCount } = await supabase
     .from('reminder_logs')
-    .select('id', { count: 'exact', head: true })
+    .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .gte('sent_at', todayStart);
 
-  const { data: weekLogs } = await supabase
+  const { count: weekCount } = await supabase
     .from('reminder_logs')
-    .select('id', { count: 'exact', head: true })
+    .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .gte('sent_at', weekStart);
 
-  const { data: monthLogs } = await supabase
+  const { count: monthCount } = await supabase
     .from('reminder_logs')
-    .select('id', { count: 'exact', head: true })
+    .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .gte('sent_at', monthStart);
 
@@ -65,9 +65,9 @@ export async function GET() {
     lastSuccessfulRun: lastSuccessfulRun || null,
     lastCronRunAt: profile?.last_cron_run_at || null,
     stats: {
-      remindersToday: todayLogs?.length || 0,
-      remindersThisWeek: weekLogs?.length || 0,
-      remindersThisMonth: monthLogs?.length || 0,
+      remindersToday: todayCount || 0,
+      remindersThisWeek: weekCount || 0,
+      remindersThisMonth: monthCount || 0,
     },
   });
 }

@@ -165,6 +165,8 @@ export async function GET(request: Request) {
       day_21_enabled: typedSettings?.day_21_enabled ?? true,
     };
 
+    const customIntervals = typedSettings?.custom_intervals || { day_1: 7, day_2: 14, day_3: 21 };
+
     // Update last cron run timestamp for this user
     await supabase
       .from('profiles')
@@ -197,7 +199,7 @@ export async function GET(request: Request) {
       const daysOverdue = Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0);
       if (daysOverdue <= 0) continue;
 
-      const reminderType = nextReminderType(daysOverdue, invoice.reminder_count ?? 0, schedule);
+      const reminderType = nextReminderType(daysOverdue, invoice.reminder_count ?? 0, schedule, customIntervals);
       if (!reminderType) continue;
 
       if (alreadySentToday(invoice.last_reminder_sent_at ?? null)) {

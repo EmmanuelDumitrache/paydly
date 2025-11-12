@@ -80,13 +80,12 @@ export async function syncXeroInvoicesForUser(
   if (!invoices.length) {
     return {
       synced: 0,
-      message: 'No unpaid invoices found in Xero',
+      message: 'No invoices found in Xero',
     };
   }
 
-  const rows = invoices
-    .filter((invoice) => invoice.Status !== 'PAID' && invoice.AmountDue > 0)
-    .map((invoice) => {
+  // Map all invoices (including paid ones) to update their status
+  const rows = invoices.map((invoice) => {
       const rawDueDate = invoice.DueDate ?? null;
       const parsedDueDate = parseXeroDate(rawDueDate);
 
@@ -148,13 +147,6 @@ export async function syncXeroInvoicesForUser(
     userId,
     rows: rows.length,
   });
-
-  if (!rows.length) {
-    return {
-      synced: 0,
-      message: 'All invoices are paid or have no amount due',
-    };
-  }
 
   const { error: upsertError } = await supabase
     .from('invoices')

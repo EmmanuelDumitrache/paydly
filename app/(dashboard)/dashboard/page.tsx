@@ -5,6 +5,7 @@ import { Clock, AlertCircle, ArrowRight } from 'lucide-react';
 
 import { Stats } from '@/components/dashboard/Stats';
 import { XeroConnect } from '@/components/dashboard/XeroConnect';
+import { CronMonitor } from '@/components/dashboard/CronMonitor';
 import { getDashboardData } from '@/lib/data/dashboard';
 import { createClient } from '@/lib/supabase/server';
 
@@ -87,6 +88,8 @@ export default async function DashboardPage({
       ) : profile?.subscription_status === 'trialing' ? (
         <TrialBanner trialEndsAt={profile.trial_ends_at} />
       ) : null}
+
+      <CronMonitor />
 
       {!xeroConnected ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-sm text-amber-700">

@@ -23,6 +23,24 @@ export async function GET(request: Request) {
 
   const supabase = createServiceClient();
 
+  // Create cron run log entry
+  const { data: cronRun, error: cronError } = await supabase
+    .from('cron_runs')
+    .insert({
+      status: 'running',
+      started_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (cronError || !cronRun) {
+    console.error('[Cron] Failed to create cron run log:', cronError);
+    return NextResponse.json({ error: 'Failed to initialize cron run' }, { status: 500 });
+  }
+
+  const cronRunId = cronRun.id;
+  console.log('[Cron] Started cron run:', cronRunId);
+
   const { data: users, error: usersError } = await supabase
     .from('profiles')
     .select('id,email,company_name,subscription_status,xero_tenant_id,xero_access_token,xero_refresh_token,xero_token_expires_at')
@@ -30,6 +48,16 @@ export async function GET(request: Request) {
     .not('xero_tenant_id', 'is', null);
 
   if (usersError) {
+    // Log failure
+    await supabase
+      .from('cron_runs')
+      .update({
+        status: 'failed',
+        completed_at: new Date().toISOString(),
+        error_message: usersError.message,
+      })
+      .eq('id', cronRunId);
+    
     return NextResponse.json({ error: usersError.message }, { status: 500 });
   }
 
@@ -115,15 +143,33 @@ export async function GET(request: Request) {
       day_7_enabled: boolean;
       day_14_enabled: boolean;
       day_21_enabled: boolean;
+      reminders_globally_paused?: boolean;
+      custom_intervals?: {
+        day_1: number;
+        day_2: number;
+        day_3: number;
+      };
     } | null;
 
     const typedSettings = settings as Settings;
+
+    // Skip if reminders are globally paused
+    if (typedSettings?.reminders_globally_paused) {
+      console.log(`[Cron] Reminders globally paused for user ${user.id}, skipping`);
+      continue;
+    }
 
     const schedule = {
       day_7_enabled: typedSettings?.day_7_enabled ?? true,
       day_14_enabled: typedSettings?.day_14_enabled ?? true,
       day_21_enabled: typedSettings?.day_21_enabled ?? true,
     };
+
+    // Update last cron run timestamp for this user
+    await supabase
+      .from('profiles')
+      .update({ last_cron_run_at: new Date().toISOString() })
+      .eq('id', user.id);
 
     const { data: invoices } = await supabase
       .from('invoices')
@@ -205,6 +251,28 @@ export async function GET(request: Request) {
       }
     }
   }
+
+  // Update cron run with completion status
+  await supabase
+    .from('cron_runs')
+    .update({
+      status: 'success',
+      completed_at: new Date().toISOString(),
+      reminders_sent: remindersSent,
+      reminders_failed: remindersFailed,
+      invoices_synced: invoicesSynced,
+      syncs_failed: syncsFailed,
+      users_processed: (users ?? []).length,
+    })
+    .eq('id', cronRunId);
+
+  console.log('[Cron] Completed cron run:', cronRunId, {
+    remindersSent,
+    remindersFailed,
+    invoicesSynced,
+    syncsFailed,
+    usersProcessed: (users ?? []).length,
+  });
 
   return NextResponse.json({ 
     remindersSent, 

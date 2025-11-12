@@ -53,8 +53,28 @@ export interface ReminderSettings {
   day_14_template: string | null;
   day_21_template: string | null;
   send_from_email: string | null;
+  reminders_globally_paused: boolean;
+  custom_intervals: {
+    day_1: number;
+    day_2: number;
+    day_3: number;
+  };
   created_at: string;
   updated_at: string;
+}
+
+export interface CronRun {
+  id: string;
+  started_at: string;
+  completed_at: string | null;
+  status: 'running' | 'success' | 'failed';
+  reminders_sent: number;
+  reminders_failed: number;
+  invoices_synced: number;
+  syncs_failed: number;
+  users_processed: number;
+  error_message: string | null;
+  created_at: string;
 }
 
 export interface XeroContact {

@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { StripeModeToggle } from '@/components/settings/StripeModeToggle';
+import { GlobalPauseToggle } from '@/components/settings/GlobalPauseToggle';
 import { updateAccountProfile, updateReminderSchedule } from './actions';
 
 export default async function SettingsPage({
@@ -62,6 +63,11 @@ export default async function SettingsPage({
       ) : null}
 
       <StripeModeToggle />
+
+      <GlobalPauseToggle 
+        initialPaused={reminderSettings?.reminders_globally_paused ?? false}
+        pausedSince={reminderSettings?.updated_at}
+      />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 
@@ -21,32 +22,43 @@ export function useSyncInvoices() {
     setStatus('syncing');
     setMessage('');
     setDetails(null);
+    toast.loading('Syncing invoices...', { id: 'sync' });
 
     try {
       const response = await fetch('/api/xero/sync', {
         method: 'POST',
       });
 
-      if (!response.ok) {
-        throw new Error('Sync failed');
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = data.error || `Sync failed: ${response.status} ${response.statusText}`;
+        console.error('[useSyncInvoices] Sync failed:', errorMessage, data);
+        setStatus('error');
+        setMessage(errorMessage);
+        toast.error(errorMessage, { id: 'sync' });
+        return;
+      }
       
       setStatus('success');
-      setMessage(data.message || `Synced ${data.synced || 0} invoices successfully`);
+      const successMessage = data.message || `Synced ${data.synced || 0} invoices successfully`;
+      setMessage(successMessage);
       setDetails({
         synced: data.synced || 0,
         newInvoices: data.newInvoices || 0,
         updatedInvoices: data.updatedInvoices || 0,
       });
       
+      toast.success(successMessage, { id: 'sync' });
+      
       // Refresh the page data
       router.refresh();
     } catch (error) {
       console.error('[useSyncInvoices] Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sync invoices';
       setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Failed to sync invoices');
+      setMessage(errorMessage);
+      toast.error(errorMessage, { id: 'sync' });
     }
   }, [router]);
 

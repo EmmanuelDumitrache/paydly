@@ -93,9 +93,22 @@ export function TopBar({ xeroConnected, xeroTenantName, lastSyncAt, onSync, isSy
         <div className="flex items-center gap-4">
           {/* Sync Button */}
           <button
-            onClick={onSync}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!xeroConnected) {
+                console.warn('[TopBar] Sync button clicked but Xero is not connected');
+                return;
+              }
+              if (isSyncing) {
+                console.warn('[TopBar] Sync button clicked but sync is already in progress');
+                return;
+              }
+              console.log('[TopBar] Sync button clicked, calling onSync');
+              onSync();
+            }}
             disabled={isSyncing || !xeroConnected}
             className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            title={!xeroConnected ? 'Connect Xero first to sync invoices' : isSyncing ? 'Syncing...' : 'Sync invoices from Xero'}
           >
             <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
             {isSyncing ? 'Syncing...' : 'Sync'}

@@ -32,7 +32,16 @@ export function DashboardLayoutClient({
   const { sync, reset, status, message, details, isSyncing } = useSyncInvoices();
 
   const handleSync = () => {
-    if (!xeroConnected) return;
+    console.log('[DashboardLayoutClient] handleSync called', { xeroConnected, isSyncing });
+    if (!xeroConnected) {
+      console.warn('[DashboardLayoutClient] Sync blocked: Xero not connected');
+      return;
+    }
+    if (isSyncing) {
+      console.warn('[DashboardLayoutClient] Sync blocked: Already syncing');
+      return;
+    }
+    console.log('[DashboardLayoutClient] Calling sync()');
     sync();
   };
 

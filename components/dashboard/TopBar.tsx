@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 
 interface TopBarProps {
   xeroConnected: boolean;
@@ -13,8 +15,15 @@ interface TopBarProps {
 }
 
 export function TopBar({ xeroConnected, xeroTenantName, lastSyncAt, onSync, isSyncing }: TopBarProps) {
+  const pathname = usePathname();
   const [showXeroTooltip, setShowXeroTooltip] = useState(false);
   const [showAgentTooltip, setShowAgentTooltip] = useState(false);
+
+  console.log('TopBar Props:', {
+    xeroConnected,
+    xeroTenantName,
+    lastSyncAt,
+  });
 
   const getXeroStatusText = () => {
     if (!xeroConnected) return 'Not connected';
@@ -22,7 +31,7 @@ export function TopBar({ xeroConnected, xeroTenantName, lastSyncAt, onSync, isSy
       const syncDate = new Date(lastSyncAt);
       const now = new Date();
       const diffMinutes = Math.floor((now.getTime() - syncDate.getTime()) / 60000);
-      
+
       if (diffMinutes < 1) return 'Synced just now';
       if (diffMinutes < 60) return `Synced ${diffMinutes}m ago`;
       const diffHours = Math.floor(diffMinutes / 60);
@@ -32,6 +41,46 @@ export function TopBar({ xeroConnected, xeroTenantName, lastSyncAt, onSync, isSy
     }
     return xeroTenantName ? `Connected to ${xeroTenantName}` : 'Connected';
   };
+
+  const HIDDEN_PREFIXES = [
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+    '/email-verification',
+    '/email-sent',
+    '/password-reset-sent',
+    '/password-reset-complete',
+    '/account-activation',
+    '/activation-sent',
+    '/activation-complete',
+    '/terms',
+    '/privacy',
+    '/contact',
+    '/about',
+    '/faq',
+    '/pricing',
+    '/blog',
+    '/careers',
+    '/sitemap',
+    '/robots.txt',
+    '/favicon.ico',
+    '/manifest.json',
+    '/browserconfig.xml',
+    '/sitemap.xml',
+    '/rss.xml',
+    '/atom.xml',
+    '/jsonld.json',
+  ];
+
+  const hideChrome = HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
+    pathname === '/' ||
+    pathname.includes('/templates');
+
+  if (hideChrome) {
+    return null;
+  }
 
   return (
     <div className="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-sm">
@@ -115,4 +164,3 @@ export function TopBar({ xeroConnected, xeroTenantName, lastSyncAt, onSync, isSy
     </div>
   );
 }
-

@@ -6,6 +6,8 @@ import { differenceInCalendarDays } from 'date-fns';
 import { CreditCard, Check, AlertCircle } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
+import { TRIAL_REMINDER_LIMIT } from '@/lib/reminders/constants';
+
 export default function BillingPage() {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
@@ -15,10 +17,32 @@ export default function BillingPage() {
 
   // Fetch profile on mount
   useEffect(() => {
-    fetch('/api/profile')
-      .then((res) => res.json())
-      .then((data) => setProfile(data.profile))
-      .catch((err) => setError('Failed to load billing information'));
+    let isMounted = true;
+
+    fetch('/api/profile', { credentials: 'include' })
+      .then(async (res) => {
+        if (!isMounted) return;
+        if (res.status === 401) {
+          setError('Your session has expired. Please sign in again.');
+          setProfile(null);
+          setTimeout(() => {
+            window.location.href = '/login?redirect=/billing';
+          }, 1500);
+          return;
+        }
+        if (!res.ok) {
+          throw new Error('Failed to load billing information');
+        }
+        const data = await res.json();
+        setProfile(data.profile);
+      })
+      .catch(() => {
+        if (isMounted) setError('Failed to load billing information');
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleSubscribe = async () => {
@@ -28,7 +52,15 @@ export default function BillingPage() {
     try {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
+        credentials: 'include',
       });
+
+      if (res.status === 401) {
+        setError('Your session has expired. Please sign in again.');
+        setLoading(false);
+        window.location.href = '/login?redirect=/billing';
+        return;
+      }
 
       const data = await res.json();
 
@@ -52,7 +84,15 @@ export default function BillingPage() {
     try {
       const res = await fetch('/api/billing/portal', {
         method: 'POST',
+        credentials: 'include',
       });
+
+      if (res.status === 401) {
+        setError('Your session has expired. Please sign in again.');
+        setLoading(false);
+        window.location.href = '/login?redirect=/billing';
+        return;
+      }
 
       const data = await res.json();
 
@@ -72,6 +112,10 @@ export default function BillingPage() {
   const subscriptionStatus = profile?.subscription_status || 'trialing';
   const trialEndsAt = profile?.trial_ends_at;
   const daysLeft = trialEndsAt ? differenceInCalendarDays(new Date(trialEndsAt), new Date()) : 0;
+  const reminderSendCount = profile?.reminder_send_count ?? 0;
+  const trialLimit = TRIAL_REMINDER_LIMIT;
+  const trialLimitReached = subscriptionStatus === 'trialing' && reminderSendCount >= trialLimit;
+  const showTrialExpired = subscriptionStatus === 'expired' || (subscriptionStatus === 'trialing' && daysLeft <= 0);
 
   return (
     <div className="space-y-8">
@@ -108,6 +152,23 @@ export default function BillingPage() {
         </div>
       )}
 
+      {trialLimitReached && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-sm text-amber-700">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p>
+              You've used all {trialLimit} reminder emails included in the trial. Upgrade to unlock unlimited reminders.
+            </p>
+            <button
+              onClick={handleSubscribe}
+              disabled={loading}
+              className="rounded-full bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? 'Loading...' : 'Upgrade now'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-sm text-rose-700">
           {error}
@@ -134,12 +195,12 @@ export default function BillingPage() {
                 Active
               </span>
             )}
-            {subscriptionStatus === 'trialing' && daysLeft > 0 && (
+            {subscriptionStatus === 'trialing' && daysLeft > 0 && !trialLimitReached && (
               <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">
                 Trial
               </span>
             )}
-            {(subscriptionStatus === 'expired' || (subscriptionStatus === 'trialing' && daysLeft <= 0)) && (
+            {showTrialExpired && (
               <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">
                 Expired
               </span>

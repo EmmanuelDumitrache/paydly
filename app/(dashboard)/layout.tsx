@@ -13,36 +13,35 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   } = await supabase.auth.getUser();
 
   let xeroConnected = false;
-let xeroTenantName = null;
-let lastSyncAt = null;
-let subscriptionStatus: 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired' = 'trialing';
-let reminderSendCount = 0;
+  let xeroTenantName = null;
+  let lastSyncAt = null;
+  let subscriptionStatus: 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired' = 'trialing';
+  let reminderSendCount = 0;
 
-let profile: any = null;
+  let profile: any = null;
 
-if (user) {
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('xero_tenant_id, updated_at, subscription_status, reminder_send_count')
-    .eq('id', user.id)
-    .maybeSingle();
+  if (user) {
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('xero_tenant_id, xero_tenant_name, xero_access_token, updated_at, subscription_status, reminder_send_count')
+      .eq('id', user.id)
+      .maybeSingle();
 
-  profile = profileData;
+    profile = profileData;
 
-  xeroConnected = Boolean(profile?.xero_tenant_id);
-  lastSyncAt = profile?.updated_at || null;
-  subscriptionStatus = (profile?.subscription_status as 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired') || 'trialing';
-  reminderSendCount = profile?.reminder_send_count ?? 0;
+    xeroConnected = Boolean(profile?.xero_tenant_id && profile?.xero_access_token);
+    lastSyncAt = profile?.updated_at || null;
+    subscriptionStatus =
+      (profile?.subscription_status as 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired') || 'trialing';
+    reminderSendCount = profile?.reminder_send_count ?? 0;
 
-  // Fetch tenant name if connected
-  if (xeroConnected && profile?.xero_tenant_id) {
-    // For now, we'll just use a placeholder. In production, you'd fetch this from Xero or store it.
-    xeroTenantName = 'Xero Account';
+    if (xeroConnected && profile?.xero_tenant_name) {
+      xeroTenantName = profile.xero_tenant_name;
+    }
   }
-}
 
-const trialLimit = TRIAL_REMINDER_LIMIT;
-const trialQuotaReached = subscriptionStatus === 'trialing' && reminderSendCount >= trialLimit;
+  const trialLimit = TRIAL_REMINDER_LIMIT;
+  const trialQuotaReached = subscriptionStatus === 'trialing' && reminderSendCount >= trialLimit;
 
   return (
     <div className="min-h-screen bg-slate-50">

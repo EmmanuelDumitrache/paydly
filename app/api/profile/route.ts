@@ -1,9 +1,9 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRouteClient } from '@/lib/supabase/route';
 
 export async function GET() {
-  const supabase = createClient();
+  const supabase = createRouteClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

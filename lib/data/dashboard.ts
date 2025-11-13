@@ -243,7 +243,7 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
     },
     invoices,
     upcomingReminders,
-    xeroConnected: Boolean(profile?.xero_tenant_id && profile?.xero_access_token),
+    xeroConnected: Boolean(profile?.xero_tenant_id),
     xeroTenantName: profile?.xero_tenant_name || null,
   };
 

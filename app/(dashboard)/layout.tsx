@@ -23,13 +23,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (user) {
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('xero_tenant_id, xero_tenant_name, xero_access_token, updated_at, subscription_status, reminder_send_count')
+      .select('xero_tenant_id, xero_tenant_name, updated_at, subscription_status, reminder_send_count')
       .eq('id', user.id)
       .maybeSingle();
 
     profile = profileData;
 
-    xeroConnected = Boolean(profile?.xero_tenant_id && profile?.xero_access_token);
+    xeroConnected = Boolean(profile?.xero_tenant_id);
     lastSyncAt = profile?.updated_at || null;
     subscriptionStatus =
       (profile?.subscription_status as 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired') || 'trialing';

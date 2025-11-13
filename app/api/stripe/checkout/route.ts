@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       mode: 'subscription',
       payment_method_types: ['card'],
       customer: profile?.stripe_customer_id ?? undefined,
-      customer_email: profile?.email ?? user.email,
+      customer_email: profile?.stripe_customer_id ? undefined : profile?.email ?? user.email,
       line_items: [
         {
           price: priceId,

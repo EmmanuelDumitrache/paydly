@@ -72,8 +72,8 @@ export async function POST(request: Request) {
         user_id: user.id,
       },
     },
-    success_url: `${origin}/dashboard?payment=success`,
-    cancel_url: `${origin}/dashboard?payment=cancelled`,
+    success_url: `${origin}/billing?payment=success`,
+    cancel_url: `${origin}/billing?payment=cancelled`,
     metadata: {
       user_id: user.id,
     },

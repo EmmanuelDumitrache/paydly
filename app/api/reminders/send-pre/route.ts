@@ -1,6 +1,7 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { sendReminderEmail } from '@/lib/email/send';
 import { getReminderTemplate } from '@/lib/email/templates';
 import { differenceInCalendarDays } from 'date-fns';
@@ -84,6 +85,8 @@ export async function POST(request: Request) {
   const companyName = profileRow?.company_name || 'Your Company';
 
   // Generate email template
+  const serviceSupabase = createServiceClient();
+
   const template = await getReminderTemplate(
     'pre_reminder',
     {
@@ -101,7 +104,7 @@ export async function POST(request: Request) {
       company_name: companyName,
       days_until_due: daysUntilDue,
     },
-    supabase,
+    serviceSupabase,
     user.id
   );
 

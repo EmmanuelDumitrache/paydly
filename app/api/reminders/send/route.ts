@@ -6,6 +6,7 @@ import { getReminderTemplate } from '@/lib/email/templates';
 import { sendReminderEmail } from '@/lib/email/send';
 import { nextReminderType } from '@/lib/reminders/utils';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { checkActiveSubscription } from '@/lib/auth/subscription';
 
 export async function POST(request: Request) {
@@ -127,6 +128,8 @@ export async function POST(request: Request) {
   }
 
   const companyName = profileRow?.company_name || profileRow?.email || user.email;
+  const serviceSupabase = createServiceClient();
+
   const template = await getReminderTemplate(
     reminderType,
     {
@@ -137,7 +140,7 @@ export async function POST(request: Request) {
       due_date: new Date(invoice.due_date).toLocaleDateString(),
       company_name: companyName,
     },
-    supabase,
+    serviceSupabase,
     user.id
   );
 

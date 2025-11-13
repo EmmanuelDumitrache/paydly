@@ -25,11 +25,19 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   let profile: any = null;
 
   if (user) {
-    const { data: profileData } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('xero_tenant_id, xero_tenant_name, updated_at, subscription_status, reminder_send_count, trial_ends_at')
       .eq('id', user.id)
       .maybeSingle();
+
+    console.log('[DashboardLayout] Profile query result:', {
+      userId: user.id,
+      profileData,
+      profileError,
+      xero_tenant_id: profileData?.xero_tenant_id,
+      xero_tenant_name: profileData?.xero_tenant_name,
+    });
 
     profile = profileData;
 
@@ -44,6 +52,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     if (xeroConnected && profile?.xero_tenant_name) {
       xeroTenantName = profile.xero_tenant_name;
     }
+
+    console.log('[DashboardLayout] Computed values:', {
+      xeroConnected,
+      xeroTenantName,
+      lastSyncAt,
+      subscriptionStatus,
+    });
   }
 
   const trialLimit = TRIAL_REMINDER_LIMIT;

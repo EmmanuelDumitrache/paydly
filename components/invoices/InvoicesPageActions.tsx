@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Mail, ExternalLink, Pause, Play } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,6 +23,7 @@ export function InvoicesPageActions({ invoice }: InvoicesPageActionsProps) {
   const [pauseLoading, setPauseLoading] = useState(false);
   const [localPaused, setLocalPaused] = useState(invoice.reminders_paused);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const router = useRouter();
 
   const isPaid = invoice.status === 'PAID';
   const xeroUrl = `https://go.xero.com/AccountsReceivable/Edit.aspx?invoiceID=${invoice.xero_invoice_id}`;
@@ -57,6 +59,7 @@ export function InvoicesPageActions({ invoice }: InvoicesPageActionsProps) {
           : `Pre-reminder sent to ${invoice.contact_email}`;
         setMessage({ type: 'success', text: isOverdue ? 'Reminder sent' : 'Pre-reminder sent' });
         toast.success(successMsg);
+        router.refresh();
         setTimeout(() => setMessage(null), 3000);
       } else {
         const data = await response.json();

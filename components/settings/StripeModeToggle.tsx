@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 type StripeMode = 'live' | 'test';
 
@@ -65,11 +66,14 @@ export function StripeModeToggle() {
       if (data?.mode === 'test' || data?.mode === 'live') {
         setMode(data.mode);
         console.log('[Stripe Toggle] Mode updated', { previous: mode, current: data.mode });
+        toast.success(`Stripe mode updated to ${data.mode === 'test' ? 'Test' : 'Live'}`);
       } else {
         console.warn('[Stripe Toggle] Unexpected response when updating mode', data);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      const errorMsg = err instanceof Error ? err.message : 'Something went wrong';
+      setError(errorMsg);
+      toast.error(errorMsg);
       console.error('[Stripe Toggle] Failed to update mode', err);
     } finally {
       setLoading(false);

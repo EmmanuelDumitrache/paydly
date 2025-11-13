@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Pause, Play, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface GlobalPauseToggleProps {
   initialPaused: boolean;
@@ -38,13 +39,19 @@ export function GlobalPauseToggle({ initialPaused, pausedSince }: GlobalPauseTog
       });
 
       if (response.ok) {
-        setIsPaused(!isPaused);
+        const newPaused = !isPaused;
+        setIsPaused(newPaused);
+        toast.success(
+          newPaused 
+            ? 'All reminders have been paused' 
+            : 'All reminders have been resumed'
+        );
       } else {
-        alert('Failed to update pause status');
+        toast.error('Failed to update pause status');
       }
     } catch (error) {
       console.error('[GlobalPauseToggle] Error:', error);
-      alert('Failed to update pause status');
+      toast.error('Network error - please try again');
     } finally {
       setLoading(false);
     }

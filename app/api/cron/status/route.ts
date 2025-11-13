@@ -1,6 +1,7 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { startOfDay, startOfWeek, startOfMonth } from 'date-fns';
 
 export async function GET() {
@@ -14,8 +15,11 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Use service client for cron_runs (RLS restricts to service role)
+  const serviceClient = createServiceClient();
+  
   // Fetch last 10 cron runs
-  const { data: cronRuns, error: cronError } = await supabase
+  const { data: cronRuns, error: cronError } = await serviceClient
     .from('cron_runs')
     .select('*')
     .order('started_at', { ascending: false })
@@ -23,7 +27,8 @@ export async function GET() {
 
   if (cronError) {
     console.error('[Cron Status] Error fetching cron runs:', cronError);
-    return NextResponse.json({ error: 'Failed to fetch cron status' }, { status: 500 });
+    // Don't fail the whole request if cron_runs isn't available
+    // return NextResponse.json({ error: 'Failed to fetch cron status' }, { status: 500 });
   }
 
   // Get last successful run

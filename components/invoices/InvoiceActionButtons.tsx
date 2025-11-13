@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Mail, ExternalLink, Pause, Play } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface InvoiceActionButtonsProps {
   invoiceId: string;
@@ -50,10 +51,19 @@ export function InvoiceActionButtons({
       });
 
       if (response.ok) {
-        setLocalPaused(!localPaused);
+        const newPaused = !localPaused;
+        setLocalPaused(newPaused);
+        toast.success(
+          newPaused 
+            ? `Reminders paused for invoice ${invoiceNumber}` 
+            : `Reminders resumed for invoice ${invoiceNumber}`
+        );
+      } else {
+        toast.error('Failed to update reminder status');
       }
     } catch (error) {
       console.error('Failed to toggle pause:', error);
+      toast.error('Network error - please try again');
     } finally {
       setPauseLoading(false);
     }

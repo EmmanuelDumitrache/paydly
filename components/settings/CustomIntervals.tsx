@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { AlertCircle, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CustomIntervalsProps {
   initialIntervals: {
@@ -54,14 +55,19 @@ export function CustomIntervals({ initialIntervals }: CustomIntervalsProps) {
 
       if (response.ok) {
         setSaved(true);
+        toast.success('Reminder schedule saved successfully!');
         setTimeout(() => setSaved(false), 3000);
       } else {
         const data = await response.json();
-        setError(data.error || 'Failed to save intervals');
+        const errorMsg = data.error || 'Failed to save intervals';
+        setError(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (err) {
       console.error('[CustomIntervals] Error:', err);
-      setError('Failed to save intervals');
+      const errorMsg = 'Failed to save intervals';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

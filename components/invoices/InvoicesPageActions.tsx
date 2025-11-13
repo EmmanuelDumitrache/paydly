@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Mail, ExternalLink, Pause, Play } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface InvoicesPageActionsProps {
   invoice: {
@@ -36,14 +37,20 @@ export function InvoicesPageActions({ invoice }: InvoicesPageActionsProps) {
       });
 
       if (response.ok) {
+        const successMsg = `Reminder sent to ${invoice.contact_email}`;
         setMessage({ type: 'success', text: 'Reminder sent' });
+        toast.success(successMsg);
         setTimeout(() => setMessage(null), 3000);
       } else {
         const data = await response.json();
-        setMessage({ type: 'error', text: data.error || 'Failed to send' });
+        const errorMsg = data.error || 'Failed to send reminder';
+        setMessage({ type: 'error', text: errorMsg });
+        toast.error(errorMsg);
       }
     } catch (error) {
+      const errorMsg = 'Network error - please try again';
       setMessage({ type: 'error', text: 'Network error' });
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -61,10 +68,19 @@ export function InvoicesPageActions({ invoice }: InvoicesPageActionsProps) {
       });
 
       if (response.ok) {
-        setLocalPaused(!localPaused);
+        const newPaused = !localPaused;
+        setLocalPaused(newPaused);
+        toast.success(
+          newPaused 
+            ? `Reminders paused for invoice ${invoice.invoice_number}` 
+            : `Reminders resumed for invoice ${invoice.invoice_number}`
+        );
+      } else {
+        toast.error('Failed to update reminder status');
       }
     } catch (error) {
       console.error('Failed to toggle pause:', error);
+      toast.error('Network error - please try again');
     } finally {
       setPauseLoading(false);
     }

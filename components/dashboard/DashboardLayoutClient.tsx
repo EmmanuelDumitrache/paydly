@@ -12,6 +12,9 @@ interface DashboardLayoutClientProps {
   xeroTenantName?: string | null;
   lastSyncAt?: string | null;
   subscriptionStatus: 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired';
+  trialQuotaReached?: boolean;
+  reminderSendCount?: number;
+  trialLimit?: number;
 }
 
 export function DashboardLayoutClient({
@@ -20,6 +23,9 @@ export function DashboardLayoutClient({
   xeroTenantName,
   lastSyncAt,
   subscriptionStatus,
+  trialQuotaReached,
+  reminderSendCount,
+  trialLimit,
 }: DashboardLayoutClientProps) {
   const { sync, reset, status, message, details, isSyncing } = useSyncInvoices();
 
@@ -34,7 +40,12 @@ export function DashboardLayoutClient({
 
   return (
     <>
-      <SubscriptionBanner subscriptionStatus={subscriptionStatus} />
+      <SubscriptionBanner
+        subscriptionStatus={subscriptionStatus}
+        trialQuotaReached={trialQuotaReached}
+        reminderSendCount={reminderSendCount}
+        trialLimit={trialLimit}
+      />
       <TopBar
         xeroConnected={xeroConnected}
         xeroTenantName={xeroTenantName}

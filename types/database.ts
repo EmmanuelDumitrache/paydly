@@ -20,8 +20,9 @@ export interface Database {
           xero_refresh_token: string | null;
           xero_token_expires_at: string | null;
           stripe_customer_id: string | null;
-          subscription_status: 'trialing' | 'active' | 'cancelled' | 'past_due';
+          subscription_status: 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired';
           trial_ends_at: string | null;
+          reminder_send_count: number;
           created_at: string;
           updated_at: string;
         };
@@ -35,8 +36,9 @@ export interface Database {
           xero_refresh_token?: string | null;
           xero_token_expires_at?: string | null;
           stripe_customer_id?: string | null;
-          subscription_status?: 'trialing' | 'active' | 'cancelled' | 'past_due';
+          subscription_status?: 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired';
           trial_ends_at?: string | null;
+          reminder_send_count?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -50,8 +52,9 @@ export interface Database {
           xero_refresh_token?: string | null;
           xero_token_expires_at?: string | null;
           stripe_customer_id?: string | null;
-          subscription_status?: 'trialing' | 'active' | 'cancelled' | 'past_due';
+          subscription_status?: 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired';
           trial_ends_at?: string | null;
+          reminder_send_count?: number;
           created_at?: string;
           updated_at?: string;
         };

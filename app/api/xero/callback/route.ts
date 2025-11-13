@@ -62,6 +62,15 @@ export async function GET(request: Request) {
       .eq('id', user.id);
 
     if (updateError) {
+      if ((updateError as { code?: string }).code === '23505') {
+        const response = NextResponse.redirect(`${origin}/settings?xero=tenant_in_use`);
+        response.cookies.set('xero_oauth_state', '', {
+          path: '/',
+          maxAge: 0,
+        });
+        return response;
+      }
+
       throw updateError;
     }
 

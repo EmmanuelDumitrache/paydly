@@ -6,6 +6,7 @@ import { sendReminderEmail } from '@/lib/email/send';
 import { getReminderTemplate } from '@/lib/email/templates';
 import { differenceInCalendarDays } from 'date-fns';
 import { checkActiveSubscription } from '@/lib/auth/subscription';
+import { TRIAL_REMINDER_LIMIT } from '@/lib/reminders/constants';
 
 export async function POST(request: Request) {
   console.log('[API /api/reminders/send-pre] Request received');
@@ -24,6 +25,14 @@ export async function POST(request: Request) {
   if (!subscriptionProfile) {
     console.log('[API /api/reminders/send-pre] Forbidden - no active subscription');
     return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
+  }
+
+  if (subscriptionProfile.subscription_status === 'trialing' && (subscriptionProfile.reminder_send_count ?? 0) >= TRIAL_REMINDER_LIMIT) {
+    console.log('[API /api/reminders/send-pre] Trial limit reached');
+    return NextResponse.json(
+      { error: 'Trial limit reached. Upgrade to Premium to send more reminders.' },
+      { status: 402 }
+    );
   }
 
   console.log('[API /api/reminders/send-pre] User:', user.id);
@@ -124,6 +133,15 @@ export async function POST(request: Request) {
     });
 
     console.log('[API /api/reminders/send-pre] Email sent successfully', emailResult);
+
+    try {
+      await serviceSupabase.rpc('increment_reminder_send_count', {
+        target_user: user.id,
+        delta: 1,
+      });
+    } catch (error) {
+      console.error('[API /api/reminders/send-pre] Failed to increment reminder usage:', error);
+    }
   } catch (emailError) {
     console.error('[API /api/reminders/send-pre] Email send failed:', emailError);
     return NextResponse.json(

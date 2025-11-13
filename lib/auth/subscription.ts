@@ -7,7 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export async function checkActiveSubscription(supabase: SupabaseClient, userId: string) {
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, trial_ends_at')
+    .select('subscription_status, trial_ends_at, reminder_send_count')
     .eq('id', userId)
     .maybeSingle();
 

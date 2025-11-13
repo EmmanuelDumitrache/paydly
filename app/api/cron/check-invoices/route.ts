@@ -8,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { alreadySentToday, nextReminderType } from '@/lib/reminders/utils';
 import { syncXeroInvoicesForUser } from '@/lib/xero/sync';
 import { refreshAccessToken } from '@/lib/xero/client';
+import { TRIAL_REMINDER_LIMIT } from '@/lib/reminders/constants';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
 
   const { data: users, error: usersError } = await supabase
     .from('profiles')
-    .select('id,email,company_name,subscription_status,xero_tenant_id,xero_access_token,xero_refresh_token,xero_token_expires_at')
+    .select('id,email,company_name,subscription_status,reminder_send_count,xero_tenant_id,xero_access_token,xero_refresh_token,xero_token_expires_at')
     .in('subscription_status', ['trialing', 'active'])
     .not('xero_tenant_id', 'is', null);
 
@@ -67,6 +68,7 @@ export async function GET(request: Request) {
   let syncsFailed = 0;
 
   const today = new Date().toISOString().split('T')[0];
+  const trialLimit = TRIAL_REMINDER_LIMIT;
 
   // Type assertion for users array
   type UserProfile = {
@@ -74,6 +76,7 @@ export async function GET(request: Request) {
     email: string;
     company_name: string | null;
     subscription_status: string;
+    reminder_send_count: number | null;
     xero_tenant_id: string | null;
     xero_access_token: string | null;
     xero_refresh_token: string | null;
@@ -86,6 +89,9 @@ export async function GET(request: Request) {
   }
 
   for (const user of (users ?? []) as UserProfile[]) {
+    const isTrialUser = user.subscription_status === 'trialing';
+    let usageCount = user.reminder_send_count ?? 0;
+
     // Step 1: Sync invoices from Xero BEFORE sending reminders
     try {
       console.log(`[Cron] Syncing invoices for user ${user.id}`);
@@ -173,6 +179,11 @@ export async function GET(request: Request) {
       .update({ last_cron_run_at: new Date().toISOString() })
       .eq('id', user.id);
 
+    if (isTrialUser && usageCount >= trialLimit) {
+      console.log(`[Cron] Trial limit reached for user ${user.id}, skipping reminders`);
+      continue;
+    }
+
     const { data: invoices } = await supabase
       .from('invoices')
       .select('*')
@@ -196,6 +207,10 @@ export async function GET(request: Request) {
     };
 
     for (const invoice of (invoices ?? []) as InvoiceData[]) {
+      if (isTrialUser && usageCount >= trialLimit) {
+        break;
+      }
+
       const daysOverdue = Math.max(differenceInCalendarDays(new Date(), new Date(invoice.due_date)), 0);
       if (daysOverdue <= 0) continue;
 
@@ -247,6 +262,20 @@ export async function GET(request: Request) {
             reminder_count: (invoice.reminder_count ?? 0) + 1,
           })
           .eq('id', invoice.id);
+
+        try {
+          await serviceSupabase.rpc('increment_reminder_send_count', {
+            target_user: user.id,
+            delta: 1,
+          });
+        } catch (usageError) {
+          console.error('[Cron] Failed to increment reminder usage:', usageError);
+        }
+
+        if (isTrialUser) {
+          usageCount += 1;
+          user.reminder_send_count = usageCount;
+        }
       } catch (error) {
         remindersFailed += 1;
         await supabase.from('reminder_logs').insert({

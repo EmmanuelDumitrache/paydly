@@ -8,6 +8,7 @@ import { nextReminderType } from '@/lib/reminders/utils';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { checkActiveSubscription } from '@/lib/auth/subscription';
+import { TRIAL_REMINDER_LIMIT } from '@/lib/reminders/constants';
 
 export async function POST(request: Request) {
   console.log('[API /api/reminders/send] Request received');
@@ -29,6 +30,16 @@ export async function POST(request: Request) {
   if (!subscriptionProfile) {
     console.log('[API /api/reminders/send] Forbidden - no active subscription');
     return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
+  }
+
+  const subscriptionStatus = subscriptionProfile.subscription_status;
+  const reminderSendCount = subscriptionProfile.reminder_send_count ?? 0;
+  if (subscriptionStatus === 'trialing' && reminderSendCount >= TRIAL_REMINDER_LIMIT) {
+    console.log('[API /api/reminders/send] Trial limit reached');
+    return NextResponse.json(
+      { error: 'Trial limit reached. Upgrade to Premium to send more reminders.' },
+      { status: 402 }
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -176,6 +187,15 @@ export async function POST(request: Request) {
     }
 
     await supabase.from('invoices').update(invoiceUpdate).eq('id', invoice.id);
+
+    try {
+      await serviceSupabase.rpc('increment_reminder_send_count', {
+        target_user: user.id,
+        delta: 1,
+      });
+    } catch (error) {
+      console.error('[API /api/reminders/send] Failed to increment reminder usage:', error);
+    }
 
     console.log('[API /api/reminders/send] Success - returning 200');
     return NextResponse.json({ success: true });

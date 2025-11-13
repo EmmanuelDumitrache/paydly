@@ -12,6 +12,8 @@ interface InvoicesPageActionsProps {
     status: string;
     reminders_paused: boolean;
     contact_email?: string | null;
+    due_date: string;
+    days_overdue?: number | null;
   };
 }
 
@@ -30,15 +32,30 @@ export function InvoicesPageActions({ invoice }: InvoicesPageActionsProps) {
     setMessage(null);
 
     try {
-      const response = await fetch('/api/reminders/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ invoice_id: invoice.id, force: true }),
-      });
+      const dueDate = new Date(invoice.due_date);
+      const now = new Date();
+      const isOverdue = (invoice.days_overdue ?? (dueDate < now ? 1 : 0)) > 0;
+
+      let response: Response;
+      if (isOverdue) {
+        response = await fetch('/api/reminders/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invoice_id: invoice.id, force: true }),
+        });
+      } else {
+        response = await fetch('/api/reminders/send-pre', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invoiceId: invoice.id }),
+        });
+      }
 
       if (response.ok) {
-        const successMsg = `Reminder sent to ${invoice.contact_email}`;
-        setMessage({ type: 'success', text: 'Reminder sent' });
+        const successMsg = isOverdue
+          ? `Reminder sent to ${invoice.contact_email}`
+          : `Pre-reminder sent to ${invoice.contact_email}`;
+        setMessage({ type: 'success', text: isOverdue ? 'Reminder sent' : 'Pre-reminder sent' });
         toast.success(successMsg);
         setTimeout(() => setMessage(null), 3000);
       } else {

@@ -10,7 +10,6 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [stripeMode, setStripeMode] = useState<'live' | 'test' | null>(null);
   const searchParams = useSearchParams();
   const accessStatus = searchParams.get('access');
 
@@ -20,20 +19,6 @@ export default function BillingPage() {
       .then((res) => res.json())
       .then((data) => setProfile(data.profile))
       .catch((err) => setError('Failed to load billing information'));
-  }, []);
-
-  // Fetch Stripe mode for debugging
-  useEffect(() => {
-    fetch('/api/stripe/mode')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.mode === 'test' || data?.mode === 'live') {
-          setStripeMode(data.mode);
-        }
-      })
-      .catch(() => {
-        // Ignore errors
-      });
   }, []);
 
   const handleSubscribe = async () => {
@@ -247,22 +232,6 @@ export default function BillingPage() {
           >
             View Billing History
           </button>
-        </div>
-      )}
-
-      {/* Debug: Stripe Mode Indicator */}
-      {stripeMode && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <div
-            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold shadow-lg ${
-              stripeMode === 'test'
-                ? 'bg-emerald-600 text-white'
-                : 'bg-indigo-600 text-white'
-            }`}
-          >
-            <span className="h-2 w-2 rounded-full bg-white"></span>
-            Stripe: {stripeMode === 'test' ? 'Test Mode' : 'Live Mode'}
-          </div>
         </div>
       )}
     </div>

@@ -13,17 +13,22 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: templates, error } = await supabase
-    .from('email_templates')
-    .select('*')
-    .eq('user_id', user.id);
+  try {
+    const { data: templates, error } = await supabase
+      .from('email_templates')
+      .select('*')
+      .eq('user_id', user.id);
 
-  if (error) {
-    console.error('[Templates API] Error fetching templates:', error);
+    if (error) {
+      console.error('[Templates API] Error fetching templates:', error);
+      return NextResponse.json({ error: error.message || 'Failed to fetch templates' }, { status: 500 });
+    }
+
+    return NextResponse.json({ templates: templates || [] });
+  } catch (error) {
+    console.error('[Templates API] Unexpected error fetching templates:', error);
     return NextResponse.json({ error: 'Failed to fetch templates' }, { status: 500 });
   }
-
-  return NextResponse.json({ templates: templates || [] });
 }
 
 export async function POST(request: Request) {
@@ -68,7 +73,7 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('[Templates API] Error saving template:', error);
-      return NextResponse.json({ error: 'Failed to save template' }, { status: 500 });
+      return NextResponse.json({ error: error.message || 'Failed to save template' }, { status: 500 });
     }
 
     return NextResponse.json({ template: data });
@@ -108,7 +113,7 @@ export async function DELETE(request: Request) {
 
     if (error) {
       console.error('[Templates API] Error deleting template:', error);
-      return NextResponse.json({ error: 'Failed to delete template' }, { status: 500 });
+      return NextResponse.json({ error: error.message || 'Failed to delete template' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

@@ -1,58 +1,36 @@
 import Stripe from 'stripe';
 
-type StripeMode = 'live' | 'test';
+type StripeMode = 'live';
 
-const DEFAULT_MODE: StripeMode =
-  (process.env.STRIPE_MODE === 'test' ? 'test' : 'live');
+// Always use live mode
+const MODE: StripeMode = 'live';
 
-const clients: Partial<Record<StripeMode, Stripe>> = {};
+let client: Stripe | null = null;
 
-function getSecretKey(mode: StripeMode): string | undefined {
-  if (mode === 'test') {
-    return process.env.STRIPE_TEST_SECRET_KEY || undefined;
-  }
+function getSecretKey(): string | undefined {
   return process.env.STRIPE_SECRET_KEY || undefined;
 }
 
-function getPriceId(mode: StripeMode): string | undefined {
-  if (mode === 'test') {
-    return process.env.STRIPE_TEST_PRICE_ID || undefined;
-  }
+function getPriceId(): string | undefined {
   return process.env.STRIPE_PRICE_ID || undefined;
 }
 
-function getWebhookSecret(mode: StripeMode): string | undefined {
-  if (mode === 'test') {
-    return process.env.STRIPE_TEST_WEBHOOK_SECRET || undefined;
-  }
+function getWebhookSecret(): string | undefined {
   return process.env.STRIPE_WEBHOOK_SECRET || undefined;
 }
 
-export function resolveMode(
-  override?: string | null | undefined
-): StripeMode {
-  const mode =
-    override === 'test' || override === 'live' ? override : DEFAULT_MODE;
-
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[Stripe] resolveMode', {
-      override: override ?? null,
-      resolved: mode,
-      defaultMode: DEFAULT_MODE,
-    });
-  }
-
-  return mode;
+export function resolveMode(): StripeMode {
+  return MODE;
 }
 
-export function getStripeResources(mode: StripeMode) {
-  const secret = getSecretKey(mode);
-  const priceId = getPriceId(mode);
-  const webhookSecret = getWebhookSecret(mode);
+export function getStripeResources() {
+  const secret = getSecretKey();
+  const priceId = getPriceId();
+  const webhookSecret = getWebhookSecret();
 
   if (process.env.NODE_ENV !== 'production') {
     console.log('[Stripe] getStripeResources', {
-      mode,
+      mode: MODE,
       hasSecret: Boolean(secret),
       hasPriceId: Boolean(priceId),
       hasWebhookSecret: Boolean(webhookSecret),
@@ -63,14 +41,14 @@ export function getStripeResources(mode: StripeMode) {
     return { stripe: null as Stripe | null, priceId, webhookSecret };
   }
 
-  if (!clients[mode]) {
-    clients[mode] = new Stripe(secret, {
+  if (!client) {
+    client = new Stripe(secret, {
       apiVersion: '2023-10-16',
     });
   }
 
   return {
-    stripe: clients[mode] ?? null,
+    stripe: client,
     priceId,
     webhookSecret,
   };

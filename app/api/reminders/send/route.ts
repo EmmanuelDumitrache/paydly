@@ -6,6 +6,7 @@ import { getReminderTemplate } from '@/lib/email/templates';
 import { sendReminderEmail } from '@/lib/email/send';
 import { nextReminderType } from '@/lib/reminders/utils';
 import { createClient } from '@/lib/supabase/server';
+import { checkActiveSubscription } from '@/lib/auth/subscription';
 
 export async function POST(request: Request) {
   console.log('[API /api/reminders/send] Request received');
@@ -20,6 +21,13 @@ export async function POST(request: Request) {
   if (!user) {
     console.log('[API /api/reminders/send] Unauthorized - no user');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Check if user has active subscription
+  const profile = await checkActiveSubscription(supabase, user.id);
+  if (!profile) {
+    console.log('[API /api/reminders/send] Forbidden - no active subscription');
+    return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
   }
 
   const body = await request.json().catch(() => null);

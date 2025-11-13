@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { TopBar } from './TopBar';
 import { SyncOverlay } from '../ui/SyncOverlay';
+import { SubscriptionBanner } from './SubscriptionBanner';
 import { useSyncInvoices } from '@/lib/hooks/useSyncInvoices';
 
 interface DashboardLayoutClientProps {
@@ -10,6 +11,7 @@ interface DashboardLayoutClientProps {
   xeroConnected: boolean;
   xeroTenantName?: string | null;
   lastSyncAt?: string | null;
+  subscriptionStatus: 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired';
 }
 
 export function DashboardLayoutClient({
@@ -17,6 +19,7 @@ export function DashboardLayoutClient({
   xeroConnected,
   xeroTenantName,
   lastSyncAt,
+  subscriptionStatus,
 }: DashboardLayoutClientProps) {
   const { sync, reset, status, message, details, isSyncing } = useSyncInvoices();
 
@@ -31,6 +34,7 @@ export function DashboardLayoutClient({
 
   return (
     <>
+      <SubscriptionBanner subscriptionStatus={subscriptionStatus} />
       <TopBar
         xeroConnected={xeroConnected}
         xeroTenantName={xeroTenantName}

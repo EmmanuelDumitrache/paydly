@@ -1,9 +1,8 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 import { createClient } from '@/lib/supabase/server';
-import { getStripeResources, resolveMode } from '@/lib/stripe/client';
+import { getStripeResources } from '@/lib/stripe/client';
 
 export async function POST(request: Request) {
   const supabase = createClient();
@@ -15,29 +14,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const cookieStore = cookies();
-  const modeCookie = cookieStore.get('stripe_mode')?.value;
-  const mode = resolveMode(modeCookie);
+  const { stripe, priceId } = getStripeResources();
 
-  const { stripe, priceId } = getStripeResources(mode);
-
-  // Always log in production for debugging
-  console.log('[Stripe Checkout] Mode resolution', {
-    modeCookie: modeCookie ?? null,
-    resolvedMode: mode,
+  console.log('[Stripe Checkout] Resources check', {
     hasStripeClient: Boolean(stripe),
     hasPriceId: Boolean(priceId),
     priceId: priceId ?? 'MISSING',
-    allCookies: cookieStore.getAll().map(c => c.name),
   });
 
   if (!stripe) {
-    console.error('[Stripe Checkout] Missing Stripe secret for mode', mode);
-    return NextResponse.json({ error: 'Stripe secret key not configured for selected mode' }, { status: 500 });
+    console.error('[Stripe Checkout] Missing Stripe secret');
+    return NextResponse.json({ error: 'Stripe secret key not configured' }, { status: 500 });
   }
 
   if (!priceId) {
-    console.error('[Stripe Checkout] Missing price ID for mode', mode);
+    console.error('[Stripe Checkout] Missing price ID');
     return NextResponse.json({ error: 'STRIPE_PRICE_ID not configured' }, { status: 500 });
   }
 
@@ -79,7 +70,6 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to create checkout session';
     console.error('[Stripe Checkout] Error creating session', {
-      mode,
       priceId,
       message,
     });

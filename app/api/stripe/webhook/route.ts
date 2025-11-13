@@ -32,36 +32,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing Stripe signature header' }, { status: 400 });
   }
 
-  let event: Stripe.Event | null = null;
-  let mode: 'live' | 'test' | null = null;
+  const { stripe, webhookSecret } = getStripeResources();
 
-  for (const candidate of ['live', 'test'] as const) {
-    const { stripe, webhookSecret } = getStripeResources(candidate);
-    if (!stripe || !webhookSecret) continue;
-
-    try {
-      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-      mode = candidate;
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[Stripe Webhook] Signature verified', {
-          attemptedMode: candidate,
-          eventType: event.type,
-        });
-      }
-      break;
-    } catch (error) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('[Stripe Webhook] Signature verification failed for mode', {
-          attemptedMode: candidate,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    }
+  if (!stripe || !webhookSecret) {
+    console.error('[Stripe Webhook] Missing Stripe configuration');
+    return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 });
   }
 
-  if (!event || !mode) {
-    console.error('[Stripe Webhook] Unable to verify signature for any mode');
-    return NextResponse.json({ error: 'Invalid webhook signature for all configured Stripe modes' }, { status: 400 });
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Stripe Webhook] Signature verified', {
+        eventType: event.type,
+      });
+    }
+  } catch (error) {
+    console.error('[Stripe Webhook] Signature verification failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
   }
 
   const supabase = createServiceClient();
@@ -72,7 +63,7 @@ export async function POST(request: Request) {
       const userId = session.metadata?.user_id;
       const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
 
-      console.log('[Stripe Webhook] checkout.session.completed', { userId, customerId, mode: session.mode, resolvedMode: mode });
+      console.log('[Stripe Webhook] checkout.session.completed', { userId, customerId, mode: session.mode });
 
       if (userId && customerId) {
         // If mode is 'subscription', the subscription will be created and we'll get a separate event
@@ -99,7 +90,6 @@ export async function POST(request: Request) {
         customerId, 
         status: subscription.status,
         trialEnd: subscription.trial_end,
-        resolvedMode: mode,
       });
 
       if (customerId) {
@@ -125,7 +115,6 @@ export async function POST(request: Request) {
         customerId, 
         status: subscription.status,
         trialEnd: subscription.trial_end,
-        resolvedMode: mode,
       });
 
       if (customerId) {
@@ -206,7 +195,7 @@ export async function POST(request: Request) {
     }
     
     default:
-      console.log('[Stripe Webhook] Unhandled event type:', event.type, { resolvedMode: mode });
+      console.log('[Stripe Webhook] Unhandled event type:', event.type);
       break;
   }
 

@@ -15,16 +15,18 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   let xeroConnected = false;
   let xeroTenantName = null;
   let lastSyncAt = null;
+  let subscriptionStatus: 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired' = 'trialing';
 
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('xero_tenant_id, updated_at')
+      .select('xero_tenant_id, updated_at, subscription_status')
       .eq('id', user.id)
       .maybeSingle();
 
     xeroConnected = Boolean(profile?.xero_tenant_id);
     lastSyncAt = profile?.updated_at || null;
+    subscriptionStatus = (profile?.subscription_status as 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired') || 'trialing';
 
     // Fetch tenant name if connected
     if (xeroConnected && profile?.xero_tenant_id) {
@@ -39,6 +41,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         xeroConnected={xeroConnected}
         xeroTenantName={xeroTenantName}
         lastSyncAt={lastSyncAt}
+        subscriptionStatus={subscriptionStatus}
       >
         <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:px-8">
           <aside className="hidden w-64 shrink-0 lg:block">

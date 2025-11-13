@@ -24,8 +24,8 @@ export async function POST(request: Request) {
   }
 
   // Check if user has active subscription
-  const profile = await checkActiveSubscription(supabase, user.id);
-  if (!profile) {
+  const subscriptionProfile = await checkActiveSubscription(supabase, user.id);
+  if (!subscriptionProfile) {
     console.log('[API /api/reminders/send] Forbidden - no active subscription');
     return NextResponse.json({ error: 'Active subscription required' }, { status: 403 });
   }
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     reminderType = nextType;
   }
 
-  const { data: profile } = await supabase
+  const { data: profileRow } = await supabase
     .from('profiles')
     .select('company_name,email')
     .eq('id', user.id)
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const companyName = profile?.company_name || profile?.email || user.email;
+  const companyName = profileRow?.company_name || profileRow?.email || user.email;
   const template = await getReminderTemplate(
     reminderType,
     {

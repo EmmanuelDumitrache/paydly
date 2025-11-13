@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { RotateCcw, Save } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { RotateCcw, Save, Send, Bold, Italic, Underline } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ReminderType } from '@/lib/email/templates';
 
@@ -102,6 +102,7 @@ interface TemplateEditorProps {
   initialBody?: string;
   onSave: (type: ReminderType, subject: string, body: string) => Promise<void>;
   onReset: (type: ReminderType) => Promise<void>;
+  onSendTest: (type: ReminderType, subject: string, body: string, email: string) => Promise<void>;
 }
 
 export function TemplateEditor({
@@ -110,12 +111,16 @@ export function TemplateEditor({
   initialBody,
   onSave,
   onReset,
+  onSendTest,
 }: TemplateEditorProps) {
   const defaultTemplate = DEFAULT_TEMPLATES[type];
   const [subject, setSubject] = useState(initialSubject || defaultTemplate.subject);
   const [body, setBody] = useState(initialBody || defaultTemplate.body);
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [testEmail, setTestEmail] = useState('');
+  const [sendingTest, setSendingTest] = useState(false);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
 
   const hasChanges =
     subject !== (initialSubject || defaultTemplate.subject) ||
@@ -145,6 +150,51 @@ export function TemplateEditor({
       toast.error('Failed to reset template');
     } finally {
       setResetting(false);
+    }
+  };
+
+  const applyFormatting = (wrapBefore: string, wrapAfter: string = wrapBefore) => {
+    if (!bodyRef.current) return;
+    const textarea = bodyRef.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    if (start === null || end === null || start === end) {
+      toast.info('Select text to format');
+      return;
+    }
+
+    const before = body.slice(0, start);
+    const selected = body.slice(start, end);
+    const after = body.slice(end);
+
+    const formatted = `${before}${wrapBefore}${selected}${wrapAfter}${after}`;
+    setBody(formatted);
+
+    // Restore selection (roughly)
+    const newCursorStart = start + wrapBefore.length;
+    const newCursorEnd = newCursorStart + selected.length;
+    requestAnimationFrame(() => {
+      if (bodyRef.current) {
+        bodyRef.current.focus();
+        bodyRef.current.setSelectionRange(newCursorStart, newCursorEnd);
+      }
+    });
+  };
+
+  const handleSendTest = async () => {
+    if (!testEmail.trim()) {
+      toast.error('Enter an email to send the test');
+      return;
+    }
+    setSendingTest(true);
+    try {
+      await onSendTest(type, subject, body, testEmail.trim());
+      toast.success('Test email sent');
+    } catch (error) {
+      toast.error('Failed to send test email');
+    } finally {
+      setSendingTest(false);
     }
   };
 
@@ -179,7 +229,34 @@ export function TemplateEditor({
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">Email Body</label>
+          <div className="mb-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => applyFormatting('**')}
+              className="rounded border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-100"
+              title="Bold"
+            >
+              <Bold className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => applyFormatting('*')}
+              className="rounded border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-100"
+              title="Italic"
+            >
+              <Italic className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => applyFormatting('__')}
+              className="rounded border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-100"
+              title="Underline"
+            >
+              <Underline className="h-4 w-4" />
+            </button>
+          </div>
           <textarea
+            ref={bodyRef}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={12}
@@ -213,6 +290,30 @@ export function TemplateEditor({
           <Save className="h-4 w-4" />
           {saving ? 'Saving...' : 'Save Template'}
         </button>
+
+        <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Send test email
+            </label>
+            <input
+              type="email"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              placeholder="name@example.com"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleSendTest}
+            disabled={sendingTest || !testEmail.trim()}
+            className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Send className="h-4 w-4" />
+            {sendingTest ? 'Sending...' : 'Send Test'}
+          </button>
+        </div>
       </div>
     </div>
   );

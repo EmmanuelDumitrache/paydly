@@ -16,6 +16,13 @@ interface EmailTemplate {
 
 const TEMPLATE_TYPES: ReminderType[] = ['day_7', 'day_14', 'day_21', 'pre_reminder'];
 
+const TEMPLATE_TITLES: Record<ReminderType, string> = {
+  day_7: '7 Days Overdue',
+  day_14: '14 Days Overdue',
+  day_21: '21 Days Overdue (Final Notice)',
+  pre_reminder: 'Pre-Reminder (Before Due Date)',
+};
+
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +77,23 @@ export default function TemplatesPage() {
     await fetchTemplates();
   };
 
+  const handleSendTest = async (type: ReminderType, subject: string, body: string, email: string) => {
+    const response = await fetch('/api/templates/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        template_type: type,
+        subject,
+        body,
+        email,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to send test email');
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -90,18 +114,26 @@ export default function TemplatesPage() {
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {TEMPLATE_TYPES.map((type) => {
           const template = templates.find((t) => t.template_type === type);
           return (
-            <TemplateEditor
-              key={type}
-              type={type}
-              initialSubject={template?.subject}
-              initialBody={template?.body}
-              onSave={handleSave}
-              onReset={handleReset}
-            />
+            <details key={type} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <summary className="flex cursor-pointer items-center justify-between rounded-2xl px-5 py-4 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
+                <span>{TEMPLATE_TITLES[type]}</span>
+                <span className="text-xs font-normal text-slate-500">Click to edit</span>
+              </summary>
+              <div className="border-t border-slate-200 px-6 py-5">
+                <TemplateEditor
+                  type={type}
+                  initialSubject={template?.subject}
+                  initialBody={template?.body}
+                  onSave={handleSave}
+                  onReset={handleReset}
+                  onSendTest={handleSendTest}
+                />
+              </div>
+            </details>
           );
         })}
       </div>

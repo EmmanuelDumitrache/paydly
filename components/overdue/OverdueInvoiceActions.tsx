@@ -92,35 +92,50 @@ export function OverdueInvoiceActions({ invoice, fallbackEmail }: OverdueInvoice
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-center gap-1">
         {!isPaid && (
-          <button
-            onClick={handleSendReminder}
-            disabled={loading || !targetEmail}
-            title={loading ? 'Sending...' : 'Send reminder'}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Mail className="h-4 w-4" />
-          </button>
+          <div className="group relative inline-flex">
+            <button
+              onClick={handleSendReminder}
+              disabled={loading || !targetEmail}
+              title={loading ? 'Sending...' : 'Send reminder'}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Mail className="h-4 w-4" />
+            </button>
+            <span className="pointer-events-none absolute top-full left-1/2 z-20 mt-1 w-max -translate-x-1/2 translate-y-1 transform rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-md transition group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+              Send reminder
+            </span>
+          </div>
         )}
 
-        <a
-          href={xeroUrl}
-          target="_blank"
-          rel="noreferrer"
-          title="View in Xero"
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-600"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </a>
+        <div className="group relative inline-flex">
+          <a
+            href={xeroUrl}
+            target="_blank"
+            rel="noreferrer"
+            title="View in Xero"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-600"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </a>
+          <span className="pointer-events-none absolute top-full left-1/2 z-20 mt-1 w-max -translate-x-1/2 translate-y-1 transform rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-md transition group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+            View in Xero
+          </span>
+        </div>
 
         {!isPaid && (
-          <button
-            onClick={handleTogglePause}
-            disabled={pauseLoading}
-            title={localPaused ? 'Resume reminders' : 'Pause reminders'}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-amber-500 hover:bg-amber-50 hover:text-amber-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {localPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-          </button>
+          <div className="group relative inline-flex">
+            <button
+              onClick={handleTogglePause}
+              disabled={pauseLoading}
+              title={localPaused ? 'Resume reminders' : 'Pause reminders'}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-amber-500 hover:bg-amber-50 hover:text-amber-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {localPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+            </button>
+            <span className="pointer-events-none absolute top-full left-1/2 z-20 mt-1 w-max -translate-x-1/2 translate-y-1 transform rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-md transition group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+              {localPaused ? 'Resume reminders' : 'Pause reminders'}
+            </span>
+          </div>
         )}
       </div>
       {message && (

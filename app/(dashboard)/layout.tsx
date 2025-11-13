@@ -45,7 +45,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             <div className="sticky top-24 space-y-6">
               <SidebarNav />
               <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-500">
-                Reminders run daily at 9am AEST. Keep your Xero connection active for best results.
+                Reminders run daily at 00:00 UTC. Keep your Xero connection active for best results.
               </div>
               <form action="/auth/signout" method="post">
                 <button

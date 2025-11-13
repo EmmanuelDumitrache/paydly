@@ -17,7 +17,7 @@ const FEATURES = [
   },
   {
     title: 'Set & forget',
-    description: 'Runs in the background every day at 9am AEST—no workflow changes required.',
+    description: 'Runs in the background every day at 00:00 UTC—no workflow changes required.',
   },
   {
     title: 'Unlimited invoices',

@@ -187,7 +187,7 @@ export default function SupportPage({
               <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
             </summary>
             <p className="mt-3 text-sm text-slate-600">
-              Paydly automatically checks for overdue invoices and sends reminders daily at 9:00 AM AEST. You can customize when reminders are sent (e.g., 7, 14, 21 days after due date) in Settings under &quot;Custom Reminder Schedule&quot;.
+              Paydly automatically checks for overdue invoices and sends reminders daily at 00:00 UTC. You can customize when reminders are sent (e.g., 7, 14, 21 days after due date) in Settings under &quot;Custom Reminder Schedule&quot;.
             </p>
           </details>
 

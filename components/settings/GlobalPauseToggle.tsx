@@ -74,7 +74,7 @@ export function GlobalPauseToggle({ initialPaused, pausedSince }: GlobalPauseTog
             <p className="mt-2 text-sm text-slate-600">
               {isPaused
                 ? 'All automated reminders are currently paused. No emails will be sent until you resume.'
-                : 'Automated reminders are active. Paydly will send reminders daily at 9am AEST.'}
+                : 'Automated reminders are active. Paydly will send reminders daily at 00:00 UTC.'}
             </p>
             {isPaused && pausedSince && (
               <p className="mt-1 text-xs text-slate-500">

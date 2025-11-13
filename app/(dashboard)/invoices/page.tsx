@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { format, formatDistanceToNowStrict } from 'date-fns';
+import { differenceInCalendarDays, format, formatDistanceToNowStrict } from 'date-fns';
 
 import { fetchInvoices, type InvoiceStatusFilter } from '@/lib/data/invoices';
 import { createClient } from '@/lib/supabase/server';
 import type { Invoice } from '@/types';
 import { InvoicesPageActions } from '@/components/invoices/InvoicesPageActions';
+import { InvoiceSearch } from '@/components/invoices/InvoiceSearch';
 
 const PAGE_SIZE = 20;
 const STATUS_TABS: { value: InvoiceStatusFilter; label: string }[] = [
@@ -18,12 +19,54 @@ function getReminderStatus(invoice: Invoice) {
     return 'Paused';
   }
   if (invoice.last_reminder_sent_at) {
-    return `Last sent ${formatDistanceToNowStrict(new Date(invoice.last_reminder_sent_at))} ago`;
+    const distance = formatDistanceToNowStrict(new Date(invoice.last_reminder_sent_at), {
+      roundingMethod: 'floor',
+    });
+    const [value, unitRaw] = distance.split(' ');
+    const unit = unitRaw?.toLowerCase() ?? '';
+    const abbreviations: Record<string, string> = {
+      second: 's',
+      seconds: 's',
+      minute: 'm',
+      minutes: 'm',
+      hour: 'h',
+      hours: 'h',
+      day: 'd',
+      days: 'd',
+      week: 'w',
+      weeks: 'w',
+      month: 'mo',
+      months: 'mo',
+      year: 'y',
+      years: 'y',
+    };
+
+    const suffix = abbreviations[unit] ?? unit?.[0] ?? '';
+    return `Sent ${value}${suffix} ago`;
   }
   if (invoice.status === 'PAID') {
     return 'Paid';
   }
   return 'Never sent';
+}
+
+function getStatusBadge(invoice: Invoice) {
+  const today = new Date();
+  if (invoice.status === 'PAID') {
+    return { label: 'Paid', tone: 'text-emerald-600' };
+  }
+
+  const daysOverdue = invoice.days_overdue ?? 0;
+  if (daysOverdue > 0) {
+    return { label: `+${daysOverdue}d`, tone: 'text-rose-600' };
+  }
+
+  const daysUntilDue = differenceInCalendarDays(new Date(invoice.due_date), today);
+  if (daysUntilDue > 0) {
+    return { label: `In ${daysUntilDue}d`, tone: 'text-indigo-600' };
+  }
+
+  return { label: 'Today', tone: 'text-amber-600' };
 }
 
 function buildLinkParams(params: URLSearchParams, updates: Record<string, string | undefined>) {
@@ -87,21 +130,7 @@ export default async function InvoicesPage({
             );
           })}
         </div>
-        <form method="get" className="flex w-full max-w-sm items-center gap-2">
-          <input type="hidden" name="status" value={status} />
-          <input
-            name="search"
-            defaultValue={search}
-            placeholder="Search by client or invoice #"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
-          >
-            Search
-          </button>
-        </form>
+        <InvoiceSearch />
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -115,10 +144,12 @@ export default async function InvoicesPage({
                 {status === 'paid' ? 'Date paid' : 'Due date'}
               </th>
               {status !== 'paid' && (
-                <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">Days overdue</th>
+                <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
+                  Status
+                </th>
               )}
               <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                {status === 'paid' ? 'Status' : 'Reminder status'}
+                {status === 'paid' ? 'Status' : 'Reminders'}
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wide">Actions</th>
             </tr>
@@ -127,6 +158,7 @@ export default async function InvoicesPage({
             {invoices.length ? (
               invoices.map((invoice) => {
                 const reminderStatus = getReminderStatus(invoice);
+                const statusBadge = getStatusBadge(invoice);
                 const overdue = invoice.status !== 'PAID' && invoice.days_overdue > 0;
                 const statusClass = overdue
                   ? 'bg-rose-100 text-rose-700'
@@ -137,9 +169,9 @@ export default async function InvoicesPage({
                 return (
                   <tr key={invoice.id} className="hover:bg-slate-50 transition">
                     <td className="px-4 py-4">
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-medium text-slate-900">{invoice.invoice_number}</span>
-                        <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusClass}`}>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusClass}`}>
                           {invoice.status === 'PAID' ? 'Paid' : overdue ? 'Overdue' : 'Due soon'}
                         </span>
                       </div>
@@ -159,8 +191,8 @@ export default async function InvoicesPage({
                         : format(new Date(invoice.due_date), 'd MMM')}
                     </td>
                     {status !== 'paid' && (
-                      <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap text-sm text-slate-600">
-                        {invoice.days_overdue}d
+                      <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap text-sm font-semibold">
+                        <span className={statusBadge.tone}>{statusBadge.label}</span>
                       </td>
                     )}
                     <td className="hidden xl:table-cell px-4 py-4 text-sm text-slate-500">

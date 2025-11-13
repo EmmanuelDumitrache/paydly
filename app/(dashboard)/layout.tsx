@@ -15,6 +15,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     data: { user },
   } = await supabase.auth.getUser();
 
+  console.log('[DashboardLayout] Auth user:', { userId: user?.id, email: user?.email });
+
   let xeroConnected = false;
   let xeroTenantName = null;
   let lastSyncAt = null;
@@ -25,21 +27,21 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   let profile: any = null;
 
   if (user) {
-    // Query profile without filtering by user.id - let RLS handle it (same as getDashboardData)
-    const { data: profileData, error: profileError } = await supabase
+    // Use exact same query pattern as getDashboardData which works correctly
+    const { data: profileRow, error: profileError } = await supabase
       .from('profiles')
-      .select('xero_tenant_id, xero_tenant_name, updated_at, subscription_status, reminder_send_count, trial_ends_at')
+      .select('*')
       .maybeSingle();
+
+    profile = profileRow;
 
     console.log('[DashboardLayout] Profile query result:', {
       userId: user.id,
-      profileData,
+      profileData: profile,
       profileError,
-      xero_tenant_id: profileData?.xero_tenant_id,
-      xero_tenant_name: profileData?.xero_tenant_name,
+      xero_tenant_id: profile?.xero_tenant_id,
+      xero_tenant_name: profile?.xero_tenant_name,
     });
-
-    profile = profileData;
 
     xeroConnected = Boolean(profile?.xero_tenant_id);
     lastSyncAt = profile?.updated_at || null;

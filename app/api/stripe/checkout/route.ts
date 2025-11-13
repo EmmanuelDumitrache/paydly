@@ -41,31 +41,52 @@ export async function POST(request: Request) {
     .eq('id', user.id)
     .maybeSingle();
 
-  try {
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      customer: profile?.stripe_customer_id ?? undefined,
-      customer_email: profile?.stripe_customer_id ? undefined : profile?.email ?? user.email,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      allow_promotion_codes: true,
-      subscription_data: {
-        metadata: {
-          user_id: user.id,
-        },
+  let customerId = profile?.stripe_customer_id ?? null;
+  const customerEmail = profile?.email ?? user.email;
+
+  if (customerId) {
+    try {
+      await stripe.customers.retrieve(customerId);
+    } catch (error) {
+      console.warn('[Stripe Checkout] Stored customer not found, clearing and retrying', {
+        customerId,
+        message: error instanceof Error ? error.message : error,
+      });
+      await supabase.from('profiles').update({ stripe_customer_id: null }).eq('id', user.id);
+      customerId = null;
+    }
+  }
+
+  const sessionParams: any = {
+    mode: 'subscription',
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
       },
-      success_url: `${origin}/dashboard?payment=success`,
-      cancel_url: `${origin}/dashboard?payment=cancelled`,
+    ],
+    allow_promotion_codes: true,
+    subscription_data: {
       metadata: {
         user_id: user.id,
       },
-    });
+    },
+    success_url: `${origin}/dashboard?payment=success`,
+    cancel_url: `${origin}/dashboard?payment=cancelled`,
+    metadata: {
+      user_id: user.id,
+    },
+  };
 
+  if (customerId) {
+    sessionParams.customer = customerId;
+  } else {
+    sessionParams.customer_email = customerEmail;
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.create(sessionParams);
     return NextResponse.json({ url: session.url });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to create checkout session';
@@ -73,6 +94,18 @@ export async function POST(request: Request) {
       priceId,
       message,
     });
+
+    if (customerId && (error as any)?.code === 'resource_missing') {
+      console.log('[Stripe Checkout] Retrying without stored customer');
+      await supabase.from('profiles').update({ stripe_customer_id: null }).eq('id', user.id);
+      const fallbackParams = { ...sessionParams };
+      delete fallbackParams.customer;
+      fallbackParams.customer_email = customerEmail;
+
+      const fallbackSession = await stripe.checkout.sessions.create(fallbackParams);
+      return NextResponse.json({ url: fallbackSession.url });
+    }
+
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

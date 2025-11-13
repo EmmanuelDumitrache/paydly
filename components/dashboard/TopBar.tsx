@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 
 interface TopBarProps {
   xeroConnected: boolean;

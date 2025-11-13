@@ -27,7 +27,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   let profile: any = null;
 
   if (user) {
-    // Use exact same query pattern as getDashboardData which works correctly
+    // ⚠️ IMPORTANT: Use exact same query pattern as getDashboardData (lib/data/dashboard.ts)
+    // DO NOT add .eq('id', user.id) - let RLS handle user filtering
+    // DO NOT use specific column selects - use .select('*') for consistency
+    // See docs/XERO_CONNECTION_STATUS_FIX.md for details
     const { data: profileRow, error: profileError } = await supabase
       .from('profiles')
       .select('*')

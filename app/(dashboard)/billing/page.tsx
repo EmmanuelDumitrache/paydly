@@ -156,7 +156,7 @@ export default function BillingPage() {
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-sm text-amber-700">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p>
-              You've used all {trialLimit} reminder emails included in the trial. Upgrade to unlock unlimited reminders.
+              You&apos;ve used all {trialLimit} reminder emails included in the trial. Upgrade to unlock unlimited reminders.
             </p>
             <button
               onClick={handleSubscribe}

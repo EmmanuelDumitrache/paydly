@@ -146,7 +146,10 @@ export async function POST(request: Request) {
 
   try {
     console.log('[API /api/reminders/send] Sending email to:', targetEmail);
-    console.log('[API /api/reminders/send] Template:', { subject: template.subject });
+    console.log('[API /api/reminders/send] Template:', {
+      subject: template.subject,
+      preview: template.text.slice(0, 120),
+    });
     
     const sendResponse = await sendReminderEmail({
       to: targetEmail,

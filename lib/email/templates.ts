@@ -118,6 +118,7 @@ export async function getReminderTemplate(
 ) {
   let subjectTemplate = SUBJECTS[type];
   let bodyTemplate = BODY_COPY[type];
+  let usedCustomTemplate = false;
 
   // Check for custom template if supabase client and userId are provided
   if (supabase && userId) {
@@ -132,12 +133,19 @@ export async function getReminderTemplate(
       if (customTemplate) {
         subjectTemplate = customTemplate.subject;
         bodyTemplate = customTemplate.body;
+        usedCustomTemplate = true;
       }
     } catch (error) {
       console.error('[getReminderTemplate] Error fetching custom template:', error);
       // Fall back to default templates on error
     }
   }
+
+  console.log('[getReminderTemplate]', {
+    userId,
+    reminderType: type,
+    usedCustomTemplate,
+  });
 
   const text = interpolate(bodyTemplate, context);
 

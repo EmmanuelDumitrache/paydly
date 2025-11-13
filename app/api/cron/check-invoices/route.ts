@@ -208,6 +208,7 @@ export async function GET(request: Request) {
 
       const toEmail = invoice.contact_email || user.email;
       const companyName = user.company_name || user.email;
+      const serviceSupabase = createServiceClient();
       const template = await getReminderTemplate(
         reminderType,
         {
@@ -218,7 +219,7 @@ export async function GET(request: Request) {
           due_date: new Date(invoice.due_date).toLocaleDateString(),
           company_name: companyName,
         },
-        supabase,
+        serviceSupabase,
         user.id
       );
 

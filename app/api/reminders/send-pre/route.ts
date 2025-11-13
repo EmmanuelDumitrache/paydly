@@ -109,7 +109,10 @@ export async function POST(request: Request) {
   );
 
   console.log('[API /api/reminders/send-pre] Sending email to:', invoice.contact_email);
-  console.log('[API /api/reminders/send-pre] Template:', { subject: template.subject });
+  console.log('[API /api/reminders/send-pre] Template:', {
+    subject: template.subject,
+    preview: template.text.slice(0, 120),
+  });
 
   // Send email
   try {

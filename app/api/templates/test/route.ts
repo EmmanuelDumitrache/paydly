@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { sendReminderEmail } from '@/lib/email/send';
 import type { ReminderType } from '@/lib/email/templates';
 import { getReminderTemplate } from '@/lib/email/templates';
@@ -31,6 +32,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
+    const serviceSupabase = createServiceClient();
+
     const template = await getReminderTemplate(
       template_type,
       {
@@ -42,7 +45,7 @@ export async function POST(request: Request) {
         company_name: 'Paydly',
         days_until_due: 3,
       },
-      null,
+      serviceSupabase,
       user.id
     );
 

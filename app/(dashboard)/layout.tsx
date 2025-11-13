@@ -25,10 +25,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   let profile: any = null;
 
   if (user) {
+    // Query profile without filtering by user.id - let RLS handle it (same as getDashboardData)
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('xero_tenant_id, xero_tenant_name, updated_at, subscription_status, reminder_send_count, trial_ends_at')
-      .eq('id', user.id)
       .maybeSingle();
 
     console.log('[DashboardLayout] Profile query result:', {

@@ -1,4 +1,6 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
+export const dynamic = 'force-dynamic';
+
 import type { ReactNode } from 'react';
 import { differenceInCalendarDays } from 'date-fns';
 import { SidebarNav } from '@/components/dashboard/SidebarNav';
@@ -71,6 +73,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 subscriptionStatus={subscriptionStatus}
                 reminderSendCount={reminderSendCount}
                 trialLimit={trialLimit}
+                trialDaysLeft={daysLeft}
               />
               <form action="/auth/signout" method="post">
                 <button

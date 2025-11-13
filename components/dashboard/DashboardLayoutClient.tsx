@@ -15,6 +15,7 @@ interface DashboardLayoutClientProps {
   trialQuotaReached?: boolean;
   reminderSendCount?: number;
   trialLimit?: number;
+  trialDaysLeft?: number | null;
 }
 
 export function DashboardLayoutClient({
@@ -26,6 +27,7 @@ export function DashboardLayoutClient({
   trialQuotaReached,
   reminderSendCount,
   trialLimit,
+  trialDaysLeft,
 }: DashboardLayoutClientProps) {
   const { sync, reset, status, message, details, isSyncing } = useSyncInvoices();
 
@@ -45,6 +47,7 @@ export function DashboardLayoutClient({
         trialQuotaReached={trialQuotaReached}
         reminderSendCount={reminderSendCount}
         trialLimit={trialLimit}
+        trialDaysLeft={trialDaysLeft ?? undefined}
       />
       <TopBar
         xeroConnected={xeroConnected}

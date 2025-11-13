@@ -1,9 +1,12 @@
+import Link from 'next/link';
+
 import { TRIAL_REMINDER_LIMIT } from '@/lib/reminders/constants';
 
 interface PlanUsageCardProps {
   subscriptionStatus: 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired';
   reminderSendCount: number;
   trialLimit?: number;
+  trialDaysLeft?: number | null;
 }
 
 function getPlanLabel(status: PlanUsageCardProps['subscriptionStatus']) {
@@ -27,6 +30,7 @@ export function PlanUsageCard({
   subscriptionStatus,
   reminderSendCount,
   trialLimit = TRIAL_REMINDER_LIMIT,
+  trialDaysLeft = null,
 }: PlanUsageCardProps) {
   const planLabel = getPlanLabel(subscriptionStatus);
   const isPremium = subscriptionStatus === 'active';
@@ -39,18 +43,21 @@ export function PlanUsageCard({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Plan</div>
-      <div className="mt-1 flex items-center justify-between">
-        <span className="text-base font-semibold text-slate-900">{planLabel}</span>
-        <span
-          className={`text-xs font-medium ${
-            isPremium ? 'text-emerald-600' : subscriptionStatus === 'past_due' || subscriptionStatus === 'expired'
-              ? 'text-rose-600'
-              : 'text-indigo-600'
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Plan</div>
+          <span className="mt-1 block text-base font-semibold text-slate-900">{planLabel}</span>
+        </div>
+        <a
+          href="/billing"
+          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+            isPremium
+              ? 'border border-slate-200 text-slate-600 hover:border-indigo-500 hover:text-indigo-600'
+              : 'bg-indigo-600 text-white hover:bg-indigo-500'
           }`}
         >
-          {isPremium ? 'Unlimited reminders' : `${trialLimit} reminder emails`}
-        </span>
+          {isPremium ? 'Manage plan' : 'Upgrade now'}
+        </a>
       </div>
 
       <div className="mt-4 space-y-1">
@@ -67,11 +74,18 @@ export function PlanUsageCard({
           />
         </div>
         {!isPremium && (
-          <p className="text-xs text-slate-500">
+          <div className="text-xs text-slate-500">
             {trialLimit - clampedUsed > 0
               ? `${trialLimit - clampedUsed} reminder${trialLimit - clampedUsed === 1 ? '' : 's'} remaining in trial`
               : 'Trial limit reached — upgrade for unlimited reminders'}
-          </p>
+            {typeof trialDaysLeft === 'number' && (
+              <div className="mt-1 text-slate-400">
+                {trialDaysLeft > 0
+                  ? `${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'} left in trial`
+                  : 'Trial has ended'}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

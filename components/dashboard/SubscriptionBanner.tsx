@@ -10,6 +10,7 @@ interface SubscriptionBannerProps {
   trialQuotaReached?: boolean;
   reminderSendCount?: number;
   trialLimit?: number;
+  trialDaysLeft?: number;
 }
 
 export function SubscriptionBanner({
@@ -17,6 +18,7 @@ export function SubscriptionBanner({
   trialQuotaReached = false,
   reminderSendCount = 0,
   trialLimit = TRIAL_REMINDER_LIMIT,
+  trialDaysLeft,
 }: SubscriptionBannerProps) {
   const isExpired = subscriptionStatus === 'expired';
   const isPastDue = subscriptionStatus === 'past_due';
@@ -50,7 +52,7 @@ export function SubscriptionBanner({
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 flex-shrink-0 text-white" />
             <div className="text-sm font-medium text-white">
-              {`Trial limit reached (${reminderSendCount}/${trialLimit} reminders sent). Upgrade to keep automating follow-ups.`}
+              {`Trial limit reached (${reminderSendCount}/${trialLimit} reminders sent)${typeof trialDaysLeft === 'number' ? ` • ${Math.max(trialDaysLeft, 0)} day${trialDaysLeft === 1 ? '' : 's'} left` : ''}. Upgrade to keep automating follow-ups.`}
             </div>
           </div>
           <Link

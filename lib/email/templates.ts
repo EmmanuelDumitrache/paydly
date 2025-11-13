@@ -110,9 +110,35 @@ function interpolate(template: string, context: TemplateContext) {
   return result;
 }
 
-export function getReminderTemplate(type: ReminderType, context: TemplateContext) {
-  const subjectTemplate = SUBJECTS[type];
-  const bodyTemplate = BODY_COPY[type];
+export async function getReminderTemplate(
+  type: ReminderType,
+  context: TemplateContext,
+  supabase?: any,
+  userId?: string
+) {
+  let subjectTemplate = SUBJECTS[type];
+  let bodyTemplate = BODY_COPY[type];
+
+  // Check for custom template if supabase client and userId are provided
+  if (supabase && userId) {
+    try {
+      const { data: customTemplate } = await supabase
+        .from('email_templates')
+        .select('subject, body')
+        .eq('user_id', userId)
+        .eq('template_type', type)
+        .maybeSingle();
+
+      if (customTemplate) {
+        subjectTemplate = customTemplate.subject;
+        bodyTemplate = customTemplate.body;
+      }
+    } catch (error) {
+      console.error('[getReminderTemplate] Error fetching custom template:', error);
+      // Fall back to default templates on error
+    }
+  }
+
   const text = interpolate(bodyTemplate, context);
 
   const html = text

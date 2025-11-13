@@ -119,14 +119,19 @@ export async function POST(request: Request) {
   }
 
   const companyName = profile?.company_name || profile?.email || user.email;
-  const template = getReminderTemplate(reminderType, {
-    invoice_number: invoice.invoice_number,
-    contact_name: invoice.contact_name,
-    amount: typeof invoice.amount_due === 'string' ? parseFloat(invoice.amount_due) : invoice.amount_due,
-    currency: invoice.currency_code || 'AUD',
-    due_date: new Date(invoice.due_date).toLocaleDateString(),
-    company_name: companyName,
-  });
+  const template = await getReminderTemplate(
+    reminderType,
+    {
+      invoice_number: invoice.invoice_number,
+      contact_name: invoice.contact_name,
+      amount: typeof invoice.amount_due === 'string' ? parseFloat(invoice.amount_due) : invoice.amount_due,
+      currency: invoice.currency_code || 'AUD',
+      due_date: new Date(invoice.due_date).toLocaleDateString(),
+      company_name: companyName,
+    },
+    supabase,
+    user.id
+  );
 
   try {
     console.log('[API /api/reminders/send] Sending email to:', targetEmail);

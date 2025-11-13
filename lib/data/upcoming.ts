@@ -15,24 +15,30 @@ export interface UpcomingInvoice {
 }
 
 export async function fetchUpcomingInvoices(
-  supabase: SupabaseClient
-): Promise<UpcomingInvoice[]> {
+  supabase: SupabaseClient,
+  options: {
+    page?: number;
+    pageSize?: number;
+  } = {}
+): Promise<{ invoices: UpcomingInvoice[]; total: number }> {
+  const { page = 1, pageSize = 10 } = options;
+  
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return [];
+    return { invoices: [], total: 0 };
   }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayISO = today.toISOString().split('T')[0];
 
-  // Fetch invoices that are due in the future (not yet due)
-  const { data: invoices, error } = await supabase
+  // Fetch invoices that are due in the future (not yet due) with count
+  const { data: invoices, error, count } = await supabase
     .from('invoices')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('user_id', user.id)
     .neq('status', 'PAID')
     .gt('due_date', todayISO)
@@ -40,15 +46,20 @@ export async function fetchUpcomingInvoices(
 
   if (error) {
     console.error('[fetchUpcomingInvoices] Error:', error);
-    return [];
+    return { invoices: [], total: 0 };
   }
 
   if (!invoices || invoices.length === 0) {
-    return [];
+    return { invoices: [], total: 0 };
   }
 
+  // Apply pagination
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedInvoices = invoices.slice(startIndex, endIndex);
+
   // Calculate days until due for each invoice
-  const upcomingInvoices: UpcomingInvoice[] = invoices.map((invoice) => {
+  const upcomingInvoices: UpcomingInvoice[] = paginatedInvoices.map((invoice) => {
     const dueDate = new Date(invoice.due_date);
     dueDate.setHours(0, 0, 0, 0);
     const daysUntilDue = differenceInCalendarDays(dueDate, today);
@@ -68,8 +79,11 @@ export async function fetchUpcomingInvoices(
     };
   });
 
-  console.log('[fetchUpcomingInvoices] Found', upcomingInvoices.length, 'upcoming invoices');
+  console.log('[fetchUpcomingInvoices] Found', upcomingInvoices.length, 'upcoming invoices (page', page, 'of', Math.ceil((count || invoices.length) / pageSize), ')');
 
-  return upcomingInvoices;
+  return {
+    invoices: upcomingInvoices,
+    total: count || invoices.length,
+  };
 }
 

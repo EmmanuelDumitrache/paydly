@@ -208,14 +208,19 @@ export async function GET(request: Request) {
 
       const toEmail = invoice.contact_email || user.email;
       const companyName = user.company_name || user.email;
-      const template = getReminderTemplate(reminderType, {
-        invoice_number: invoice.invoice_number,
-        contact_name: invoice.contact_name,
-        amount: typeof invoice.amount_due === 'string' ? parseFloat(invoice.amount_due) : invoice.amount_due,
-        currency: invoice.currency_code || 'AUD',
-        due_date: new Date(invoice.due_date).toLocaleDateString(),
-        company_name: companyName,
-      });
+      const template = await getReminderTemplate(
+        reminderType,
+        {
+          invoice_number: invoice.invoice_number,
+          contact_name: invoice.contact_name,
+          amount: typeof invoice.amount_due === 'string' ? parseFloat(invoice.amount_due) : invoice.amount_due,
+          currency: invoice.currency_code || 'AUD',
+          due_date: new Date(invoice.due_date).toLocaleDateString(),
+          company_name: companyName,
+        },
+        supabase,
+        user.id
+      );
 
       try {
         await sendReminderEmail({

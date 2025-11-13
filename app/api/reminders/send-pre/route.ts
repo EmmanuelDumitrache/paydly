@@ -76,21 +76,26 @@ export async function POST(request: Request) {
   const companyName = profile?.company_name || 'Your Company';
 
   // Generate email template
-  const template = getReminderTemplate('pre_reminder', {
-    invoice_number: invoice.invoice_number,
-    contact_name: invoice.contact_name,
-    amount: typeof invoice.amount_due === 'string' 
-      ? parseFloat(invoice.amount_due) 
-      : invoice.amount_due,
-    currency: invoice.currency_code || 'AUD',
-    due_date: new Date(invoice.due_date).toLocaleDateString('en-AU', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }),
-    company_name: companyName,
-    days_until_due: daysUntilDue,
-  });
+  const template = await getReminderTemplate(
+    'pre_reminder',
+    {
+      invoice_number: invoice.invoice_number,
+      contact_name: invoice.contact_name,
+      amount: typeof invoice.amount_due === 'string' 
+        ? parseFloat(invoice.amount_due) 
+        : invoice.amount_due,
+      currency: invoice.currency_code || 'AUD',
+      due_date: new Date(invoice.due_date).toLocaleDateString('en-AU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+      company_name: companyName,
+      days_until_due: daysUntilDue,
+    },
+    supabase,
+    user.id
+  );
 
   console.log('[API /api/reminders/send-pre] Sending email to:', invoice.contact_email);
   console.log('[API /api/reminders/send-pre] Template:', { subject: template.subject });

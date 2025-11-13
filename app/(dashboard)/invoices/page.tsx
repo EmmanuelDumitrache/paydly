@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { differenceInCalendarDays, format, formatDistanceToNowStrict } from 'date-fns';
 
 import { fetchInvoices, type InvoiceStatusFilter } from '@/lib/data/invoices';
@@ -7,7 +8,7 @@ import type { Invoice } from '@/types';
 import { InvoicesPageActions } from '@/components/invoices/InvoicesPageActions';
 import { InvoiceSearch } from '@/components/invoices/InvoiceSearch';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 const STATUS_TABS: { value: InvoiceStatusFilter; label: string }[] = [
   { value: 'all', label: 'All invoices' },
   { value: 'overdue', label: 'Overdue' },
@@ -130,7 +131,17 @@ export default async function InvoicesPage({
             );
           })}
         </div>
-        <InvoiceSearch />
+        <Suspense fallback={
+          <div className="flex w-full max-w-sm items-center gap-2">
+            <input
+              disabled
+              placeholder="Search by client or invoice #"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm bg-slate-50"
+            />
+          </div>
+        }>
+          <InvoiceSearch />
+        </Suspense>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -155,57 +166,65 @@ export default async function InvoicesPage({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white">
-            {invoices.length ? (
-              invoices.map((invoice) => {
-                const reminderStatus = getReminderStatus(invoice);
-                const statusBadge = getStatusBadge(invoice);
-                const overdue = invoice.status !== 'PAID' && invoice.days_overdue > 0;
-                const statusClass = overdue
-                  ? 'bg-rose-100 text-rose-700'
-                  : invoice.status === 'PAID'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-amber-100 text-amber-700';
+            {invoices.length > 0 ? (
+              <>
+                {invoices.map((invoice) => {
+                  const reminderStatus = getReminderStatus(invoice);
+                  const statusBadge = getStatusBadge(invoice);
+                  const overdue = invoice.status !== 'PAID' && invoice.days_overdue > 0;
+                  const statusClass = overdue
+                    ? 'bg-rose-100 text-rose-700'
+                    : invoice.status === 'PAID'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-amber-100 text-amber-700';
 
-                return (
-                  <tr key={invoice.id} className="hover:bg-slate-50 transition">
-                    <td className="px-4 py-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-slate-900">{invoice.invoice_number}</span>
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusClass}`}>
-                          {invoice.status === 'PAID' ? 'Paid' : overdue ? 'Overdue' : 'Due soon'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="max-w-[180px]">
-                        <div className="text-sm font-medium text-slate-900 truncate">{invoice.contact_name}</div>
-                        <div className="text-xs text-slate-500 truncate">{invoice.contact_email ?? 'No email'}</div>
-                      </div>
-                    </td>
-                    <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">
-                      ${invoice.amount_due.toFixed(2)}
-                    </td>
-                    <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {status === 'paid' 
-                        ? format(new Date(invoice.updated_at), 'd MMM yyyy')
-                        : format(new Date(invoice.due_date), 'd MMM')}
-                    </td>
-                    {status !== 'paid' && (
-                      <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap text-sm font-semibold">
-                        <span className={statusBadge.tone}>{statusBadge.label}</span>
+                  return (
+                    <tr key={invoice.id} className="hover:bg-slate-50 transition">
+                      <td className="px-4 py-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium text-slate-900">{invoice.invoice_number}</span>
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusClass}`}>
+                            {invoice.status === 'PAID' ? 'Paid' : overdue ? 'Overdue' : 'Due soon'}
+                          </span>
+                        </div>
                       </td>
-                    )}
-                    <td className="hidden xl:table-cell px-4 py-4 text-sm text-slate-500">
-                      <div className="max-w-[150px] truncate">
-                        {status === 'paid' ? 'Paid' : reminderStatus}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-right">
-                      <InvoicesPageActions invoice={invoice} />
-                    </td>
+                      <td className="px-4 py-4">
+                        <div className="max-w-[180px]">
+                          <div className="text-sm font-medium text-slate-900 truncate">{invoice.contact_name}</div>
+                          <div className="text-xs text-slate-500 truncate">{invoice.contact_email ?? 'No email'}</div>
+                        </div>
+                      </td>
+                      <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">
+                        ${invoice.amount_due.toFixed(2)}
+                      </td>
+                      <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-sm text-slate-600">
+                        {status === 'paid' 
+                          ? format(new Date(invoice.updated_at), 'd MMM yyyy')
+                          : format(new Date(invoice.due_date), 'd MMM')}
+                      </td>
+                      {status !== 'paid' && (
+                        <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap text-sm font-semibold">
+                          <span className={statusBadge.tone}>{statusBadge.label}</span>
+                        </td>
+                      )}
+                      <td className="hidden xl:table-cell px-4 py-4 text-sm text-slate-500">
+                        <div className="max-w-[150px] truncate">
+                          {status === 'paid' ? 'Paid' : reminderStatus}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <InvoicesPageActions invoice={invoice} />
+                      </td>
+                    </tr>
+                  );
+                })}
+                {/* Fill empty rows to maintain consistent height */}
+                {Array.from({ length: Math.max(0, PAGE_SIZE - invoices.length) }).map((_, i) => (
+                  <tr key={`empty-${i}`} className="h-[73px]">
+                    <td className="px-4 py-4" colSpan={status === 'paid' ? 6 : 7}>&nbsp;</td>
                   </tr>
-                );
-              })
+                ))}
+              </>
             ) : (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-sm text-slate-500">

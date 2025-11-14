@@ -11,8 +11,11 @@ const ALLOWED_FOR_EXPIRED = ['/billing', '/settings', '/auth/signout'];
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const supabase = createMiddlewareClient<Database>({ req: request, res: response });
+  
+  // Get session - this will refresh if needed
   const {
     data: { session },
+    error: sessionError,
   } = await supabase.auth.getSession();
 
   const pathname = request.nextUrl.pathname;
@@ -20,11 +23,19 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = AUTH_PATHS.includes(pathname);
   const isAllowedForExpired = ALLOWED_FOR_EXPIRED.some((path) => pathname.startsWith(path));
 
+  // Log session errors for debugging (only in non-production if needed)
+  if (sessionError) {
+    console.error('[Middleware] Session error:', sessionError.message);
+  }
+
   // Redirect to login if not authenticated
   if (!session && isProtected) {
-    const redirectUrl = new URL('/login', request.url);
-    redirectUrl.searchParams.set('redirectedFrom', pathname + request.nextUrl.search);
-    return NextResponse.redirect(redirectUrl);
+    // Don't redirect if already on login page (avoid redirect loops)
+    if (pathname !== '/login') {
+      const redirectUrl = new URL('/login', request.url);
+      redirectUrl.searchParams.set('redirectedFrom', pathname + request.nextUrl.search);
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   // Redirect to dashboard if already authenticated and trying to access auth pages
@@ -35,13 +46,18 @@ export async function middleware(request: NextRequest) {
 
   // Check subscription status for protected paths
   if (session && isProtected && !isAllowedForExpired) {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('subscription_status, trial_ends_at')
       .eq('id', session.user.id)
       .maybeSingle();
 
-    if (profile) {
+    // If there's an error getting the profile, log it but don't block access
+    // This prevents issues with OAuth users who might have timing issues with profile creation
+    if (profileError) {
+      console.error('[Middleware] Profile fetch error:', profileError.message);
+      // Continue - don't block access if we can't fetch profile
+    } else if (profile) {
       // Check if trial has expired
       if (profile.subscription_status === 'trialing' && profile.trial_ends_at) {
         const trialEndsAt = new Date(profile.trial_ends_at);
@@ -68,6 +84,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl);
       }
     }
+    // If no profile exists, allow access (let the app handle profile creation)
   }
 
   // Redirect authenticated users from landing page to dashboard

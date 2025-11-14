@@ -70,10 +70,17 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Redirect authenticated users from landing page to dashboard
+  // This handles cases where OAuth redirects to Site URL instead of callback
+  if (session && pathname === '/') {
+    const redirectUrl = new URL('/dashboard', request.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/invoices/:path*', '/settings/:path*', '/billing/:path*', '/overdue/:path*', '/upcoming/:path*', '/templates/:path*', '/login', '/signup'],
+  matcher: ['/dashboard/:path*', '/invoices/:path*', '/settings/:path*', '/billing/:path*', '/overdue/:path*', '/upcoming/:path*', '/templates/:path*', '/login', '/signup', '/'],
 };
 

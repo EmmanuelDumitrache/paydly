@@ -49,154 +49,24 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
   const handleGoogleSignIn = async () => {
     setError(null);
     
-    // CRITICAL: Use console.error for all logs to ensure they're visible even if console is filtered
-    console.error('==========================================');
-    console.error('[LoginForm] ========== STARTING GOOGLE OAUTH ==========');
-    console.error('[LoginForm] Origin:', process.env.NEXT_PUBLIC_APP_URL || window.location.origin);
-    console.error('[LoginForm] Current URL:', window.location.href);
-    console.error('[LoginForm] Current cookies:', document.cookie);
-    console.error('==========================================');
-    
-    // Also show in UI for debugging
-    setError('⚠️ Check browser console (F12) for OAuth logs...');
+    console.error('[LoginForm] ========== STARTING SERVER-SIDE GOOGLE OAUTH ==========');
     
     try {
-      // IMPORTANT: Use client-side OAuth for proper PKCE cookie handling
-      // Client-side ensures cookies are set in the browser and persist through redirects
+      // RADICAL FIX: Use server-side OAuth initiation instead of client-side
+      // This ensures PKCE code verifier cookie is set correctly server-side
       const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-      const redirectTo = `${origin}/api/auth/callback`;
+      const oauthUrl = `${origin}/api/auth/google`;
       
-      console.error('[LoginForm] Redirect URL:', redirectTo);
-      console.error('[LoginForm] Calling signInWithOAuth...');
+      console.error('[LoginForm] Redirecting to server-side OAuth route:', oauthUrl);
+      console.error('[LoginForm] This ensures PKCE cookies are set correctly server-side');
       
-      const { data, error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-
-      console.error('[LoginForm] signInWithOAuth response - data:', data);
-      console.error('[LoginForm] signInWithOAuth response - error:', signInError);
-
-      if (signInError) {
-        console.error('[LoginForm] ❌ Google sign-in error:', signInError);
-        console.error('[LoginForm] Error details:', JSON.stringify(signInError, null, 2));
-        setError(signInError.message);
-        return;
-      }
-
-      // CRITICAL: signInWithOAuth returns a URL that we MUST redirect to
-      // This starts the OAuth flow and sets the PKCE code verifier cookie
-      if (data?.url) {
-        console.error('[LoginForm] ✅ Got OAuth URL from Supabase');
-        
-        // IMPORTANT: Wait a moment for cookie to be set by Supabase
-        // Sometimes there's a timing issue where cookie isn't immediately available
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // IMPORTANT: Check cookies AFTER signInWithOAuth call and after delay
-        // Supabase should have set the code verifier cookie at this point
-        const cookiesAfterOAuthCall = document.cookie;
-        console.error('[LoginForm] Cookies AFTER signInWithOAuth call (after 100ms delay):', cookiesAfterOAuthCall);
-        
-        // Also check localStorage and sessionStorage - Supabase might store code verifier there
-        console.error('[LoginForm] Checking localStorage...');
-        const localStorageKeys = Object.keys(localStorage);
-        console.error('[LoginForm] localStorage keys:', localStorageKeys.join(', '));
-        const localStorageSupabaseKeys = localStorageKeys.filter(k => k.includes('supabase') || k.includes('auth') || k.includes('code'));
-        console.error('[LoginForm] localStorage Supabase-related keys:', localStorageSupabaseKeys.join(', '));
-        
-        console.error('[LoginForm] Checking sessionStorage...');
-        const sessionStorageKeys = Object.keys(sessionStorage);
-        console.error('[LoginForm] sessionStorage keys:', sessionStorageKeys.join(', '));
-        const sessionStorageSupabaseKeys = sessionStorageKeys.filter(k => k.includes('supabase') || k.includes('auth') || k.includes('code'));
-        console.error('[LoginForm] sessionStorage Supabase-related keys:', sessionStorageSupabaseKeys.join(', '));
-        
-        // Parse all cookies to check for code verifier
-        const allCookies = cookiesAfterOAuthCall ? cookiesAfterOAuthCall.split(';').map(c => {
-          const [name, ...valueParts] = c.trim().split('=');
-          return { name, value: valueParts.join('='), full: c.trim() };
-        }) : [];
-        
-        console.error('[LoginForm] Parsed cookies count:', allCookies.length);
-        console.error('[LoginForm] All cookie names:', allCookies.map(c => c.name).join(', '));
-        
-        // Check if Supabase code verifier cookie is present
-        // Supabase uses pattern: sb-<project-ref>-auth-token-code-verifier
-        const codeVerifierCookies = allCookies.filter(c => 
-          c.name.includes('code-verifier') || 
-          c.name.includes('code_verifier') ||
-          c.name.includes('codeverifier') ||
-          c.name.includes('auth-token')
-        );
-        
-        // Also check for any sb- cookies
-        const supabaseCookies = allCookies.filter(c => c.name.startsWith('sb-'));
-        console.error('[LoginForm] Supabase cookies found:', supabaseCookies.map(c => c.name).join(', '));
-        
-        // Check localStorage and sessionStorage for code verifier
-        let codeVerifierFound = false;
-        for (const key of localStorageSupabaseKeys) {
-          const value = localStorage.getItem(key);
-          if (value && (key.includes('code') || key.includes('verifier'))) {
-            console.error('[LoginForm] Found code verifier in localStorage:', key, '=', value.substring(0, 50));
-            codeVerifierFound = true;
-          }
-        }
-        for (const key of sessionStorageSupabaseKeys) {
-          const value = sessionStorage.getItem(key);
-          if (value && (key.includes('code') || key.includes('verifier'))) {
-            console.error('[LoginForm] Found code verifier in sessionStorage:', key, '=', value.substring(0, 50));
-            codeVerifierFound = true;
-          }
-        }
-        
-        if (codeVerifierCookies.length > 0) {
-          console.error('[LoginForm] ✅ Code verifier cookie(s) found:', codeVerifierCookies.map(c => c.name));
-          codeVerifierCookies.forEach(c => {
-            console.error('[LoginForm]   - Cookie name:', c.name);
-            console.error('[LoginForm]   - Cookie value length:', c.value.length);
-            console.error('[LoginForm]   - Cookie value (first 20 chars):', c.value.substring(0, 20));
-          });
-        } else if (codeVerifierFound) {
-          console.error('[LoginForm] ✅ Code verifier found in localStorage/sessionStorage (but not cookies)');
-          console.error('[LoginForm] WARNING: Code verifier in storage may not be accessible to server-side callback!');
-        } else {
-          console.error('[LoginForm] ⚠️⚠️⚠️ WARNING: No code verifier found anywhere (cookies, localStorage, or sessionStorage)!');
-          console.error('[LoginForm] This WILL cause authentication to fail!');
-          console.error('[LoginForm] Available cookie names:', allCookies.map(c => c.name).join(', '));
-          
-          // Try to manually check cookie via getCookie function
-          const supabaseProjectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
-          if (supabaseProjectRef) {
-            const expectedCookieName = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
-            console.error('[LoginForm] Expected cookie name:', expectedCookieName);
-            const cookieValue = document.cookie.split(';').find(c => c.trim().startsWith(expectedCookieName + '='));
-            if (cookieValue) {
-              console.error('[LoginForm] Found expected cookie via manual check:', cookieValue.substring(0, 50));
-            } else {
-              console.error('[LoginForm] Expected cookie NOT found via manual check');
-            }
-          }
-        }
-        
-        console.error('[LoginForm] About to redirect to:', data.url);
-        console.error('[LoginForm] ==========================================');
-        
-        window.location.href = data.url;
-      } else {
-        console.error('[LoginForm] ❌ No OAuth URL returned from Supabase!');
-        console.error('[LoginForm] Data object:', JSON.stringify(data, null, 2));
-        setError('Failed to get OAuth URL. Please try again.');
-      }
+      // Redirect to server-side OAuth route which will:
+      // 1. Generate OAuth URL server-side with proper cookie handling
+      // 2. Set PKCE code verifier cookie in the response
+      // 3. Redirect to Google OAuth
+      window.location.href = oauthUrl;
     } catch (err) {
       console.error('[LoginForm] ❌ Exception during Google sign-in:', err);
-      console.error('[LoginForm] Error stack:', err instanceof Error ? err.stack : 'No stack trace');
       setError(err instanceof Error ? err.message : 'Failed to initiate Google sign-in');
     }
   };

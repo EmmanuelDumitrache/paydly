@@ -67,67 +67,22 @@ export function SignupForm() {
   const handleGoogleSignUp = async () => {
     setError(null);
     
-    console.log('[SignupForm] ========== STARTING GOOGLE OAUTH ==========');
-    console.log('[SignupForm] Origin:', process.env.NEXT_PUBLIC_APP_URL || window.location.origin);
-    console.log('[SignupForm] Current cookies:', document.cookie);
+    console.error('[SignupForm] ========== STARTING SERVER-SIDE GOOGLE OAUTH ==========');
     
     try {
+      // RADICAL FIX: Use server-side OAuth initiation instead of client-side
+      // This ensures PKCE code verifier cookie is set correctly server-side
       const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-      const redirectTo = `${origin}/api/auth/callback`;
+      const oauthUrl = `${origin}/api/auth/google`;
       
-      console.log('[SignupForm] Redirect URL:', redirectTo);
-      console.log('[SignupForm] Calling signInWithOAuth...');
+      console.error('[SignupForm] Redirecting to server-side OAuth route:', oauthUrl);
+      console.error('[SignupForm] This ensures PKCE cookies are set correctly server-side');
       
-      const { data, error: signUpError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-
-      console.log('[SignupForm] signInWithOAuth response - data:', data);
-      console.log('[SignupForm] signInWithOAuth response - error:', signUpError);
-
-      if (signUpError) {
-        console.error('[SignupForm] ❌ Google sign-up error:', signUpError);
-        setError(signUpError.message);
-        return;
-      }
-
-      if (data?.url) {
-        console.log('[SignupForm] ✅ Got OAuth URL from Supabase');
-        
-        const cookiesAfterOAuthCall = document.cookie;
-        console.log('[SignupForm] Cookies AFTER signInWithOAuth call:', cookiesAfterOAuthCall);
-        
-        const allCookies = cookiesAfterOAuthCall.split(';').map(c => {
-          const [name, ...valueParts] = c.trim().split('=');
-          return { name, value: valueParts.join('=') };
-        });
-        
-        const codeVerifierCookies = allCookies.filter(c => 
-          c.name.includes('code-verifier') || 
-          c.name.includes('code_verifier') ||
-          c.name.includes('codeverifier')
-        );
-        
-        if (codeVerifierCookies.length > 0) {
-          console.log('[SignupForm] ✅ Code verifier cookie found:', codeVerifierCookies.map(c => c.name));
-        } else {
-          console.warn('[SignupForm] ⚠️ WARNING: No code verifier cookie found!');
-          console.warn('[SignupForm] Available cookies:', allCookies.map(c => c.name).join(', '));
-        }
-        
-        console.log('[SignupForm] Redirecting to:', data.url);
-        window.location.href = data.url;
-      } else {
-        console.error('[SignupForm] ❌ No OAuth URL returned!');
-        setError('Failed to get OAuth URL. Please try again.');
-      }
+      // Redirect to server-side OAuth route which will:
+      // 1. Generate OAuth URL server-side with proper cookie handling
+      // 2. Set PKCE code verifier cookie in the response
+      // 3. Redirect to Google OAuth
+      window.location.href = oauthUrl;
     } catch (err) {
       console.error('[SignupForm] ❌ Exception during Google sign-up:', err);
       setError(err instanceof Error ? err.message : 'Failed to initiate Google sign-up');

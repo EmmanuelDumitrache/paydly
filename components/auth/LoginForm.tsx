@@ -104,6 +104,19 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
         const cookiesAfterOAuthCall = document.cookie;
         console.error('[LoginForm] Cookies AFTER signInWithOAuth call (after 100ms delay):', cookiesAfterOAuthCall);
         
+        // Also check localStorage and sessionStorage - Supabase might store code verifier there
+        console.error('[LoginForm] Checking localStorage...');
+        const localStorageKeys = Object.keys(localStorage);
+        console.error('[LoginForm] localStorage keys:', localStorageKeys.join(', '));
+        const localStorageSupabaseKeys = localStorageKeys.filter(k => k.includes('supabase') || k.includes('auth') || k.includes('code'));
+        console.error('[LoginForm] localStorage Supabase-related keys:', localStorageSupabaseKeys.join(', '));
+        
+        console.error('[LoginForm] Checking sessionStorage...');
+        const sessionStorageKeys = Object.keys(sessionStorage);
+        console.error('[LoginForm] sessionStorage keys:', sessionStorageKeys.join(', '));
+        const sessionStorageSupabaseKeys = sessionStorageKeys.filter(k => k.includes('supabase') || k.includes('auth') || k.includes('code'));
+        console.error('[LoginForm] sessionStorage Supabase-related keys:', sessionStorageSupabaseKeys.join(', '));
+        
         // Parse all cookies to check for code verifier
         const allCookies = cookiesAfterOAuthCall ? cookiesAfterOAuthCall.split(';').map(c => {
           const [name, ...valueParts] = c.trim().split('=');
@@ -126,6 +139,23 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
         const supabaseCookies = allCookies.filter(c => c.name.startsWith('sb-'));
         console.error('[LoginForm] Supabase cookies found:', supabaseCookies.map(c => c.name).join(', '));
         
+        // Check localStorage and sessionStorage for code verifier
+        let codeVerifierFound = false;
+        for (const key of localStorageSupabaseKeys) {
+          const value = localStorage.getItem(key);
+          if (value && (key.includes('code') || key.includes('verifier'))) {
+            console.error('[LoginForm] Found code verifier in localStorage:', key, '=', value.substring(0, 50));
+            codeVerifierFound = true;
+          }
+        }
+        for (const key of sessionStorageSupabaseKeys) {
+          const value = sessionStorage.getItem(key);
+          if (value && (key.includes('code') || key.includes('verifier'))) {
+            console.error('[LoginForm] Found code verifier in sessionStorage:', key, '=', value.substring(0, 50));
+            codeVerifierFound = true;
+          }
+        }
+        
         if (codeVerifierCookies.length > 0) {
           console.error('[LoginForm] ✅ Code verifier cookie(s) found:', codeVerifierCookies.map(c => c.name));
           codeVerifierCookies.forEach(c => {
@@ -133,8 +163,11 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
             console.error('[LoginForm]   - Cookie value length:', c.value.length);
             console.error('[LoginForm]   - Cookie value (first 20 chars):', c.value.substring(0, 20));
           });
+        } else if (codeVerifierFound) {
+          console.error('[LoginForm] ✅ Code verifier found in localStorage/sessionStorage (but not cookies)');
+          console.error('[LoginForm] WARNING: Code verifier in storage may not be accessible to server-side callback!');
         } else {
-          console.error('[LoginForm] ⚠️⚠️⚠️ WARNING: No code verifier cookie found after signInWithOAuth!');
+          console.error('[LoginForm] ⚠️⚠️⚠️ WARNING: No code verifier found anywhere (cookies, localStorage, or sessionStorage)!');
           console.error('[LoginForm] This WILL cause authentication to fail!');
           console.error('[LoginForm] Available cookie names:', allCookies.map(c => c.name).join(', '));
           

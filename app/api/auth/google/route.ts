@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=no_oauth_url`);
   }
 
+  console.log('[Auth Google] OAuth URL received from Supabase:', data.url); // Log the URL
   console.log('[Auth Google] Redirecting to OAuth provider');
 
   const response = NextResponse.redirect(data.url);

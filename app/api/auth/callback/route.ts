@@ -21,45 +21,42 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  // Get cookies from both the request headers and the cookie store
-  // The code verifier might be in request headers if it was set client-side
-  const cookieHeader = request.headers.get('cookie') || '';
+  // IMPORTANT: In Next.js, cookies are lazily evaluated.
+  // We must create a function that returns a fresh cookie store each time,
+  // and force reading cookies BEFORE creating the Supabase client.
+  
+  // Get all cookies first - this forces Next.js to read them from the request
   const cookieStore = cookies();
+  const allCookies = cookieStore.getAll();
   
-  // Log all cookies from both sources
-  const cookieStoreCookies = cookieStore.getAll();
-  const cookieHeaderNames = cookieHeader ? cookieHeader.split(';').map(c => c.split('=')[0].trim()) : [];
+  // Log all cookies for debugging
+  console.log('[Auth Callback] All cookies found:', allCookies.map(c => ({
+    name: c.name,
+    hasValue: !!c.value && c.value.length > 0,
+    isCodeVerifier: c.name.includes('code-verifier'),
+  })));
   
-  console.log('[Auth Callback] Cookies from cookie store:', cookieStoreCookies.map(c => c.name));
-  console.log('[Auth Callback] Cookies from request headers:', cookieHeaderNames);
+  // Check for code verifier cookie specifically
+  const codeVerifierCookie = allCookies.find(c => 
+    c.name.includes('code-verifier') || 
+    c.name.includes('sb-') && c.name.includes('verifier')
+  );
   
-  // Check for code verifier in cookie store
-  const codeVerifierInStore = cookieStoreCookies.find(c => c.name.includes('code-verifier'));
-  
-  // Check for code verifier in cookie header (it might be there even if not in cookieStore)
-  const codeVerifierInHeader = cookieHeaderNames.some(name => name.includes('code-verifier'));
-  
-  if (!codeVerifierInStore && !codeVerifierInHeader) {
-    console.error('[Auth Callback] No code-verifier cookie found in store or headers!');
-    console.error('[Auth Callback] This will cause exchangeCodeForSession to fail.');
-    console.error('[Auth Callback] Cookie header:', cookieHeader.substring(0, 200));
+  if (!codeVerifierCookie || !codeVerifierCookie.value) {
+    console.error('[Auth Callback] Code verifier cookie not found or empty!');
+    console.error('[Auth Callback] Cookie names:', allCookies.map(c => c.name));
+    console.error('[Auth Callback] Full cookie header:', request.headers.get('cookie')?.substring(0, 300));
   } else {
-    if (codeVerifierInStore) {
-      console.log('[Auth Callback] Code verifier found in cookie store:', codeVerifierInStore.name);
-    }
-    if (codeVerifierInHeader) {
-      console.log('[Auth Callback] Code verifier found in request headers');
-    }
+    console.log('[Auth Callback] Code verifier cookie found:', {
+      name: codeVerifierCookie.name,
+      valueLength: codeVerifierCookie.value.length,
+    });
   }
   
-  // IMPORTANT: In Next.js, cookies are lazily evaluated.
-  // We must force reading cookies before exchangeCodeForSession to ensure
-  // the code_verifier cookie is available.
-  cookieStore.getAll(); // Force reading all cookies from request
-  
-  // Create Supabase client
+  // Create Supabase client with a function that returns fresh cookies
+  // This ensures cookies are read fresh each time the client accesses them
   const supabase = createRouteHandlerClient<Database>({ 
-    cookies: () => cookieStore,
+    cookies: () => cookies(), // Return fresh cookie store each time
   });
   
   console.log('[Auth Callback] Exchanging code for session...');
@@ -144,12 +141,12 @@ export async function GET(request: NextRequest) {
   console.log('[Auth Callback] Successfully authenticated user:', userId);
   console.log('[Auth Callback] Session token exists:', !!session.access_token);
 
-  // Check cookies that should be set by Supabase
-  const allCookies = cookieStore.getAll();
-  console.log('[Auth Callback] Cookies in cookie store:', allCookies.map(c => c.name));
+  // Check cookies that should be set by Supabase after exchange
+  const cookiesAfterExchange = cookies().getAll();
+  console.log('[Auth Callback] Cookies in cookie store after exchange:', cookiesAfterExchange.map(c => c.name));
   
   // Find Supabase auth cookies (they typically start with 'sb-')
-  const supabaseCookies = allCookies.filter(c => c.name.startsWith('sb-'));
+  const supabaseCookies = cookiesAfterExchange.filter(c => c.name.startsWith('sb-'));
   console.log('[Auth Callback] Supabase auth cookies found:', supabaseCookies.map(c => c.name));
 
   // Create redirect response
@@ -159,7 +156,7 @@ export async function GET(request: NextRequest) {
   
   // Copy ALL cookies from the cookie store to the redirect response
   // This ensures session cookies set by Supabase are preserved across the redirect
-  allCookies.forEach((cookie) => {
+  cookiesAfterExchange.forEach((cookie) => {
     redirectResponse.cookies.set(cookie.name, cookie.value, {
       path: '/',
       // Supabase auth cookies are httpOnly

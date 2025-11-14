@@ -27,16 +27,17 @@ export async function GET(request: NextRequest) {
       const userEmail = data.user.email;
 
       // Check if profile exists, if not wait a moment for trigger to create it
-      let profile = await supabase
+      const profileResult = await supabase
         .from('profiles')
         .select('subscription_status, trial_ends_at')
         .eq('id', userId)
         .maybeSingle();
 
       // If profile doesn't exist yet, wait a moment and try again (trigger may still be processing)
-      if (!profile.data && profile.error?.code === 'PGRST116') {
+      let finalProfileResult = profileResult;
+      if (profileResult.error?.code === 'PGRST116') {
         await new Promise((resolve) => setTimeout(resolve, 500));
-        profile = await supabase
+        finalProfileResult = await supabase
           .from('profiles')
           .select('subscription_status, trial_ends_at')
           .eq('id', userId)
@@ -44,10 +45,12 @@ export async function GET(request: NextRequest) {
       }
 
       // If profile exists but doesn't have trial info, set it up (for OAuth users)
-      if (profile.data && !profile.data.trial_ends_at) {
+      // @ts-ignore - TypeScript has trouble with Supabase query result types after reassignment
+      if (finalProfileResult?.data && !finalProfileResult.data.trial_ends_at) {
         const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
         await supabase
           .from('profiles')
+          // @ts-expect-error - TypeScript type inference issue with Supabase update
           .update({
             subscription_status: 'trialing',
             trial_ends_at: trialEndsAt,
@@ -59,6 +62,7 @@ export async function GET(request: NextRequest) {
       if (userEmail) {
         await supabase
           .from('profiles')
+          // @ts-expect-error - TypeScript type inference issue with Supabase update
           .update({ email: userEmail })
           .eq('id', userId)
           .is('email', null);

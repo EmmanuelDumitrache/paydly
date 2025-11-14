@@ -13,7 +13,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
+  // IMPORTANT: Force Next.js to read all cookies before exchangeCodeForSession
+  // Next.js lazily evaluates cookies, so we must explicitly read them first
   const cookieStore = cookies();
+  cookieStore.getAll(); // Force reading all cookies from request
+  
   const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);

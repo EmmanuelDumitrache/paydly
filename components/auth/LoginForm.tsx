@@ -49,9 +49,28 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
   const handleGoogleSignIn = async () => {
     setError(null);
     
-    // Redirect to server-side OAuth initiation route
-    // This ensures cookies are set server-side and accessible in the callback
-    window.location.href = '/api/auth/google';
+    // Use NEXT_PUBLIC_APP_URL if available, otherwise use current origin
+    const redirectUrl = process.env.NEXT_PUBLIC_APP_URL 
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`
+      : `${window.location.origin}/api/auth/callback`;
+    
+    console.log('[LoginForm] Google sign-in redirect URL:', redirectUrl);
+    
+    const { error: signInError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+
+    if (signInError) {
+      console.error('[LoginForm] Google sign-in error:', signInError);
+      setError(signInError.message);
+    }
   };
 
   return (

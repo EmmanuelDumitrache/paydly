@@ -45,8 +45,12 @@ export async function GET(request: NextRequest) {
 
   console.log('[Auth Google] Redirecting to OAuth provider');
 
-  // Redirect to the OAuth provider
-  // The code verifier cookie will be set server-side and will be accessible in the callback
-  return NextResponse.redirect(data.url);
+  const response = NextResponse.redirect(data.url);
+
+  // Log Set-Cookie headers from the response
+  const setCookieHeaders = response.headers.getSetCookie();
+  console.log('[Auth Google] Set-Cookie headers from OAuth initiation response:', setCookieHeaders);
+
+  return response;
 }
 

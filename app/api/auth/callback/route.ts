@@ -84,18 +84,23 @@ export async function GET(request: NextRequest) {
 
   console.log('[Auth Callback] Successfully authenticated user:', userId);
 
-  // Redirect to dashboard - cookies are automatically handled by createRouteHandlerClient
-  // We need to ensure the redirect response includes the cookies set by Supabase
-  const redirectResponse = NextResponse.redirect(`${origin}/dashboard`);
-  
-  // Copy all cookies from the cookie store to ensure session is preserved
+  // Check cookies that should be set by Supabase
   const allCookies = cookieStore.getAll();
-  console.log('[Auth Callback] Copying cookies to redirect response:', allCookies.map(c => c.name));
+  console.log('[Auth Callback] Cookies in cookie store:', allCookies.map(c => c.name));
+  
+  // Find Supabase auth cookies (they typically start with 'sb-')
+  const supabaseCookies = allCookies.filter(c => c.name.startsWith('sb-'));
+  console.log('[Auth Callback] Supabase auth cookies found:', supabaseCookies.map(c => c.name));
+
+  // Redirect to dashboard
+  // The cookies should be set automatically by createRouteHandlerClient
+  // Copy all cookies to ensure session is preserved
+  const redirectResponse = NextResponse.redirect(`${origin}/dashboard`);
   
   allCookies.forEach((cookie) => {
     redirectResponse.cookies.set(cookie.name, cookie.value, {
       path: '/',
-      httpOnly: true,
+      httpOnly: cookie.name.startsWith('sb-') || cookie.name.includes('auth'),
       secure: origin.startsWith('https'),
       sameSite: 'lax',
     });

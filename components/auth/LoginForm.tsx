@@ -50,13 +50,28 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
     setError(null);
     
     try {
-      // Use server-side route for better cookie handling with PKCE
+      // IMPORTANT: Use client-side OAuth for proper PKCE cookie handling
+      // Client-side ensures cookies are set in the browser and persist through redirects
       const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const redirectTo = `${origin}/api/auth/callback`;
-      const googleAuthUrl = `/api/auth/google?redirect_to=${encodeURIComponent(redirectTo)}`;
       
-      // Redirect to server-side route which handles OAuth initiation
-      window.location.href = googleAuthUrl;
+      const { error: signInError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (signInError) {
+        console.error('[LoginForm] Google sign-in error:', signInError);
+        setError(signInError.message);
+      }
+      // Note: If successful, the browser will redirect to Google, then to callback
+      // No need to manually redirect here
     } catch (err) {
       console.error('[LoginForm] Google sign-in error:', err);
       setError(err instanceof Error ? err.message : 'Failed to initiate Google sign-in');

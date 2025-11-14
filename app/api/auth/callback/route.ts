@@ -13,35 +13,34 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  // IMPORTANT: Force Next.js to read all cookies before exchangeCodeForSession
-  // Next.js lazily evaluates cookies, so we must explicitly read them first
+  // CRITICAL: For proper PKCE cookie handling with Next.js 14+
+  // We must pass cookies as a function that returns the cookie store
+  // This ensures cookies are read fresh on each access
   const cookieStore = cookies();
-  const allCookies = cookieStore.getAll(); // Force reading all cookies from request
   
-  // Create Supabase client with cookie store
-  // The client will use this cookie store to read and set cookies
+  // Force reading all cookies from request to ensure they're available
+  // Next.js lazily evaluates cookies, so we must explicitly read them first
+  const allCookies = cookieStore.getAll();
+  
+  // Create Supabase client with proper cookie handling
+  // The cookies function must return a fresh cookie store each time
   const supabase = createRouteHandlerClient<Database>({ 
     cookies: () => cookieStore,
   });
   
-  
-  // Log cookies for debugging - check if code_verifier is present
+  // Log cookies for debugging
   const cookieHeader = request.headers.get('cookie') || '';
+  console.log('[Auth Callback] Processing callback with code:', code?.substring(0, 10) + '...');
   console.log('[Auth Callback] Cookie header length:', cookieHeader.length);
-  console.log('[Auth Callback] Cookies from cookieStore:', allCookies.map(c => ({
-    name: c.name,
-    hasValue: !!c.value && c.value.length > 0,
-  })));
+  console.log('[Auth Callback] Available cookies:', allCookies.map(c => c.name).join(', '));
   
-  // Check for code_verifier in request headers directly (for debugging)
-  const codeVerifierMatch = cookieHeader.match(/sb-[^=]*-auth-token-code-verifier=([^;]*)/);
-  if (codeVerifierMatch && codeVerifierMatch[1] && codeVerifierMatch[1].length > 0) {
-    console.log('[Auth Callback] Code verifier found in cookie header, length:', codeVerifierMatch[1].length);
+  // Check for code_verifier cookie (Supabase stores it with pattern: sb-<project>-auth-token-code-verifier)
+  const codeVerifierCookie = allCookies.find(c => c.name.includes('code-verifier'));
+  if (codeVerifierCookie && codeVerifierCookie.value) {
+    console.log('[Auth Callback] Code verifier cookie found:', codeVerifierCookie.name.substring(0, 20) + '...');
   } else {
-    console.warn('[Auth Callback] Code verifier NOT found in cookie header!');
-    console.warn('[Auth Callback] Available cookies:', allCookies.map(c => c.name).join(', '));
-    // Note: Supabase's exchangeCodeForSession might still work if the cookie is read differently
-    // We'll let it try and handle the error if it fails
+    console.warn('[Auth Callback] Code verifier cookie NOT found!');
+    console.warn('[Auth Callback] This may cause PKCE exchange to fail');
   }
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -102,23 +101,34 @@ export async function GET(request: NextRequest) {
   }
 
   // Create redirect response
-  // Supabase sets cookies automatically during exchangeCodeForSession
-  // We need to ensure the response includes all cookies from the request
+  // Supabase automatically sets session cookies during exchangeCodeForSession
+  // We need to ensure all cookies are preserved in the response
   const redirectResponse = NextResponse.redirect(`${origin}/dashboard`);
   
-  // Copy all cookies from the request to the redirect response
-  // This ensures session cookies set by Supabase are preserved
+  // Get all cookies after the exchange (Supabase sets new session cookies here)
+  // Read from the cookieStore again to get any cookies Supabase may have set
   const cookiesAfterExchange = cookieStore.getAll();
+  
+  // Preserve all cookies in the redirect response
   cookiesAfterExchange.forEach((cookie) => {
-    redirectResponse.cookies.set(cookie.name, cookie.value, {
-      path: '/',
-      httpOnly: cookie.name.startsWith('sb-') || cookie.name.includes('auth'),
-      secure: origin.startsWith('https'),
-      sameSite: 'lax',
-      maxAge: cookie.name.includes('session') ? 60 * 60 * 24 * 7 : undefined, // 7 days for session cookies
-    });
+    // Only set cookies that have values
+    if (cookie.value && cookie.value.length > 0) {
+      redirectResponse.cookies.set(cookie.name, cookie.value, {
+        path: '/',
+        httpOnly: cookie.name.startsWith('sb-') || cookie.name.includes('auth'),
+        secure: origin.startsWith('https'),
+        sameSite: 'lax',
+        // Session cookies should persist longer
+        maxAge: cookie.name.includes('session') || cookie.name.includes('access') 
+          ? 60 * 60 * 24 * 7  // 7 days
+          : cookie.name.includes('code-verifier')
+          ? undefined  // Don't set maxAge for code verifier (should be short-lived anyway)
+          : undefined,
+      });
+    }
   });
   
+  console.log('[Auth Callback] Successfully authenticated user:', userId);
   return redirectResponse;
 }
 

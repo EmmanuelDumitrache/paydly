@@ -68,13 +68,28 @@ export function SignupForm() {
     setError(null);
     
     try {
-      // Use server-side route for better cookie handling with PKCE
+      // IMPORTANT: Use client-side OAuth for proper PKCE cookie handling
+      // Client-side ensures cookies are set in the browser and persist through redirects
       const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const redirectTo = `${origin}/api/auth/callback`;
-      const googleAuthUrl = `/api/auth/google?redirect_to=${encodeURIComponent(redirectTo)}`;
       
-      // Redirect to server-side route which handles OAuth initiation
-      window.location.href = googleAuthUrl;
+      const { error: signUpError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (signUpError) {
+        console.error('[SignupForm] Google sign-up error:', signUpError);
+        setError(signUpError.message);
+      }
+      // Note: If successful, the browser will redirect to Google, then to callback
+      // No need to manually redirect here
     } catch (err) {
       console.error('[SignupForm] Google sign-up error:', err);
       setError(err instanceof Error ? err.message : 'Failed to initiate Google sign-up');

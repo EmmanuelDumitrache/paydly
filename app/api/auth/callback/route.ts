@@ -16,8 +16,26 @@ export async function GET(request: NextRequest) {
   // IMPORTANT: Force Next.js to read all cookies before exchangeCodeForSession
   // Next.js lazily evaluates cookies, so we must explicitly read them first
   const cookieStore = cookies();
-  cookieStore.getAll(); // Force reading all cookies from request
+  const allCookies = cookieStore.getAll(); // Force reading all cookies from request
   
+  // Log cookies for debugging - check if code_verifier is present
+  const cookieHeader = request.headers.get('cookie') || '';
+  console.log('[Auth Callback] Cookie header:', cookieHeader.substring(0, 500));
+  console.log('[Auth Callback] Cookies from cookieStore:', allCookies.map(c => ({
+    name: c.name,
+    hasValue: !!c.value && c.value.length > 0,
+  })));
+  
+  // Check for code_verifier in request headers directly
+  const codeVerifierMatch = cookieHeader.match(/sb-[^=]*-auth-token-code-verifier=([^;]*)/);
+  if (codeVerifierMatch && codeVerifierMatch[1]) {
+    console.log('[Auth Callback] Code verifier found in cookie header, length:', codeVerifierMatch[1].length);
+  } else {
+    console.error('[Auth Callback] Code verifier NOT found in cookie header or empty!');
+  }
+  
+  // Create Supabase client with cookie store
+  // The client will use this cookie store to read and set cookies
   const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -77,7 +95,22 @@ export async function GET(request: NextRequest) {
       .is('email', null);
   }
 
-  // Redirect to dashboard - Supabase automatically handles cookies through createRouteHandlerClient
-  return NextResponse.redirect(`${origin}/dashboard`);
+  // Create redirect response and copy all cookies from cookieStore to it
+  // This ensures cookies set by Supabase during exchangeCodeForSession are preserved
+  const redirectResponse = NextResponse.redirect(`${origin}/dashboard`);
+  
+  // Copy all cookies from the cookie store to the redirect response
+  // Supabase sets cookies in the cookieStore during exchangeCodeForSession
+  const cookiesAfterExchange = cookieStore.getAll();
+  cookiesAfterExchange.forEach((cookie) => {
+    redirectResponse.cookies.set(cookie.name, cookie.value, {
+      path: '/',
+      httpOnly: cookie.name.startsWith('sb-') || cookie.name.includes('auth'),
+      secure: origin.startsWith('https'),
+      sameSite: 'lax',
+    });
+  });
+  
+  return redirectResponse;
 }
 

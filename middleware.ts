@@ -4,9 +4,9 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 import type { Database } from '@/types/database';
 
-const PROTECTED_PATHS = ['/dashboard', '/invoices', '/settings', '/overdue', '/upcoming', '/templates', '/history'];
+const PROTECTED_PATHS = ['/dashboard', '/invoices', '/settings', '/overdue', '/upcoming', '/templates'];
 const AUTH_PATHS = ['/login', '/signup'];
-const ALLOWED_FOR_EXPIRED = ['/billing', '/settings', '/auth/signout', '/history'];
+const ALLOWED_FOR_EXPIRED = ['/billing', '/settings', '/auth/signout'];
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
@@ -74,6 +74,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/invoices/:path*', '/settings/:path*', '/billing/:path*', '/overdue/:path*', '/upcoming/:path*', '/templates/:path*', '/history/:path*', '/login', '/signup'],
+  matcher: ['/dashboard/:path*', '/invoices/:path*', '/settings/:path*', '/billing/:path*', '/overdue/:path*', '/upcoming/:path*', '/templates/:path*', '/login', '/signup'],
 };
 

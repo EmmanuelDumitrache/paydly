@@ -19,14 +19,19 @@ export default async function HistoryPage() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
   console.log('[HistoryPage] NEXT_PUBLIC_BASE_URL:', baseUrl);
 
+  let fullBaseUrl = baseUrl;
+  if (fullBaseUrl && !fullBaseUrl.startsWith('http://') && !fullBaseUrl.startsWith('https://')) {
+    fullBaseUrl = `https://${fullBaseUrl}`;
+  }
+
   let emailHistory = [];
   let fetchError = null;
 
   try {
-    if (!baseUrl) {
+    if (!fullBaseUrl) {
       throw new Error('NEXT_PUBLIC_BASE_URL is not defined.');
     }
-    const response = await fetch(`${baseUrl}/api/history`, { cache: 'no-store' }); // Disable caching for debugging
+    const response = await fetch(`${fullBaseUrl}/api/history`, { cache: 'no-store' }); // Disable caching for debugging
     
     if (!response.ok) {
       const errorText = await response.text();

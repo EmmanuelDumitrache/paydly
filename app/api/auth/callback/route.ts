@@ -18,25 +18,31 @@ export async function GET(request: NextRequest) {
   const cookieStore = cookies();
   const allCookies = cookieStore.getAll(); // Force reading all cookies from request
   
+  // Create Supabase client with cookie store
+  // The client will use this cookie store to read and set cookies
+  const supabase = createRouteHandlerClient<Database>({ 
+    cookies: () => cookieStore,
+  });
+  
+  
   // Log cookies for debugging - check if code_verifier is present
   const cookieHeader = request.headers.get('cookie') || '';
-  console.log('[Auth Callback] Cookie header:', cookieHeader.substring(0, 500));
+  console.log('[Auth Callback] Cookie header length:', cookieHeader.length);
   console.log('[Auth Callback] Cookies from cookieStore:', allCookies.map(c => ({
     name: c.name,
     hasValue: !!c.value && c.value.length > 0,
   })));
   
-  // Check for code_verifier in request headers directly
+  // Check for code_verifier in request headers directly (for debugging)
   const codeVerifierMatch = cookieHeader.match(/sb-[^=]*-auth-token-code-verifier=([^;]*)/);
-  if (codeVerifierMatch && codeVerifierMatch[1]) {
+  if (codeVerifierMatch && codeVerifierMatch[1] && codeVerifierMatch[1].length > 0) {
     console.log('[Auth Callback] Code verifier found in cookie header, length:', codeVerifierMatch[1].length);
   } else {
-    console.error('[Auth Callback] Code verifier NOT found in cookie header or empty!');
+    console.warn('[Auth Callback] Code verifier NOT found in cookie header!');
+    console.warn('[Auth Callback] Available cookies:', allCookies.map(c => c.name).join(', '));
+    // Note: Supabase's exchangeCodeForSession might still work if the cookie is read differently
+    // We'll let it try and handle the error if it fails
   }
-  
-  // Create Supabase client with cookie store
-  // The client will use this cookie store to read and set cookies
-  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
@@ -95,12 +101,13 @@ export async function GET(request: NextRequest) {
       .is('email', null);
   }
 
-  // Create redirect response and copy all cookies from cookieStore to it
-  // This ensures cookies set by Supabase during exchangeCodeForSession are preserved
+  // Create redirect response
+  // Supabase sets cookies automatically during exchangeCodeForSession
+  // We need to ensure the response includes all cookies from the request
   const redirectResponse = NextResponse.redirect(`${origin}/dashboard`);
   
-  // Copy all cookies from the cookie store to the redirect response
-  // Supabase sets cookies in the cookieStore during exchangeCodeForSession
+  // Copy all cookies from the request to the redirect response
+  // This ensures session cookies set by Supabase are preserved
   const cookiesAfterExchange = cookieStore.getAll();
   cookiesAfterExchange.forEach((cookie) => {
     redirectResponse.cookies.set(cookie.name, cookie.value, {
@@ -108,6 +115,7 @@ export async function GET(request: NextRequest) {
       httpOnly: cookie.name.startsWith('sb-') || cookie.name.includes('auth'),
       secure: origin.startsWith('https'),
       sameSite: 'lax',
+      maxAge: cookie.name.includes('session') ? 60 * 60 * 24 * 7 : undefined, // 7 days for session cookies
     });
   });
   

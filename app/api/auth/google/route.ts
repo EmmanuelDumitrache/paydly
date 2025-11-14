@@ -1,27 +1,23 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
 import type { Database } from '@/types/database';
 
-export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url);
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? requestUrl.origin;
-  const redirectTo = `${origin}/api/auth/callback`;
-
-  // Create Supabase client with fresh cookies
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? url.origin;
+  
+  // Get the redirect URL from query params or use default
+  const redirectTo = url.searchParams.get('redirect_to') || `${origin}/api/auth/callback`;
+  
+  // Create Supabase client with proper cookie handling for route handlers
   const cookieStore = cookies();
-  
-  // Force reading cookies to ensure they're available
-  cookieStore.getAll();
-  
   const supabase = createRouteHandlerClient<Database>({ 
-    cookies: () => cookies(), // Fresh cookie store
+    cookies: () => cookieStore,
   });
-
-  console.log('[Auth Google] Initiating OAuth flow, redirectTo:', redirectTo);
-
-  // Initiate OAuth flow server-side - this will set the code verifier cookie server-side
+  
+  // Get OAuth URL with proper PKCE handling
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -34,24 +30,36 @@ export async function GET(request: NextRequest) {
   });
 
   if (error) {
-    console.error('[Auth Google] Error initiating OAuth:', error);
-    return NextResponse.redirect(`${origin}/login?error=oauth_init_failed&details=${encodeURIComponent(error.message)}`);
+    console.error('[Google Auth] Error initiating OAuth:', error);
+    return NextResponse.redirect(
+      `${origin}/login?error=oauth_init_failed&details=${encodeURIComponent(error.message)}`
+    );
   }
 
-  if (!data.url) {
-    console.error('[Auth Google] No OAuth URL returned');
+  if (!data?.url) {
+    console.error('[Google Auth] No OAuth URL returned');
     return NextResponse.redirect(`${origin}/login?error=no_oauth_url`);
   }
 
-  console.log('[Auth Google] OAuth URL received from Supabase:', data.url); // Log the URL
-  console.log('[Auth Google] Redirecting to OAuth provider');
-
-  const response = NextResponse.redirect(data.url);
-
-  // Log Set-Cookie headers from the response
-  const setCookieHeaders = response.headers.getSetCookie();
-  console.log('[Auth Google] Set-Cookie headers from OAuth initiation response:', setCookieHeaders);
-
-  return response;
+  // Create redirect response to Google OAuth
+  // IMPORTANT: We need to preserve cookies set by Supabase during signInWithOAuth
+  // The code verifier cookie must be included in this redirect so it's available
+  // when Google redirects back to our callback route
+  const redirectResponse = NextResponse.redirect(data.url);
+  
+  // Copy all cookies from the cookie store to the redirect response
+  // This ensures the PKCE code verifier cookie is preserved during the redirect
+  const allCookies = cookieStore.getAll();
+  allCookies.forEach((cookie) => {
+    redirectResponse.cookies.set(cookie.name, cookie.value, {
+      path: '/',
+      httpOnly: cookie.name.startsWith('sb-') || cookie.name.includes('auth'),
+      secure: origin.startsWith('https'),
+      sameSite: 'lax',
+      maxAge: cookie.name.includes('code-verifier') ? 600 : undefined, // 10 minutes for code verifier
+    });
+  });
+  
+  return redirectResponse;
 }
 

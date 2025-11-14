@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/client';
 
-export function LoginForm() {
+export function LoginForm({ initialError }: { initialError?: string | null }) {
   const router = useRouter();
   const supabase = createClient();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError || null);
   const [isSubmitting, setSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 

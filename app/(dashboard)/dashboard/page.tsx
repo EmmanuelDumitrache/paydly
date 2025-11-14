@@ -103,9 +103,9 @@ export default async function DashboardPage({
         </div>
       ) : null}
 
-      <Stats stats={stats} />
-      
       <XeroConnect connected={xeroConnected} lastSyncedAt={lastSyncText} tenantName={xeroTenantName} />
+      
+      <Stats stats={stats} />
 
       <div className="grid gap-6 md:grid-cols-2">
         <Link

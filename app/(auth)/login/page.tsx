@@ -20,6 +20,12 @@ export default function LoginPage({
     errorMessage = errorDetails 
       ? `Authentication failed: ${errorDetails}`
       : 'Authentication failed. Please try again.';
+  } else if (errorParam === 'oauth_init_failed') {
+    errorMessage = errorDetails 
+      ? `OAuth initialization failed: ${errorDetails}`
+      : 'Failed to initialize Google sign-in. Please try again.';
+  } else if (errorParam === 'no_oauth_url') {
+    errorMessage = 'Failed to get OAuth URL. Please try again.';
   } else if (errorParam === 'missing_code') {
     errorMessage = 'Missing authentication code. Please try signing in again.';
   } else if (errorParam === 'no_user') {

@@ -66,20 +66,10 @@ export function SignupForm() {
 
   const handleGoogleSignUp = async () => {
     setError(null);
-    const { error: signUpError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
-    });
-
-    if (signUpError) {
-      setError(signUpError.message);
-    }
+    
+    // Redirect to server-side OAuth initiation route
+    // This ensures cookies are set server-side and accessible in the callback
+    window.location.href = '/api/auth/google';
   };
 
   return (

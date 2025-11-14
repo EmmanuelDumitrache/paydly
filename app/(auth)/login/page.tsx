@@ -13,10 +13,20 @@ export default function LoginPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const errorParam = typeof searchParams.error === 'string' ? searchParams.error : null;
-  const errorMessage =
-    errorParam === 'authentication_failed'
-      ? 'Authentication failed. Please try again.'
-      : null;
+  const errorDetails = typeof searchParams.details === 'string' ? searchParams.details : null;
+  
+  let errorMessage = null;
+  if (errorParam === 'authentication_failed') {
+    errorMessage = errorDetails 
+      ? `Authentication failed: ${errorDetails}`
+      : 'Authentication failed. Please try again.';
+  } else if (errorParam === 'missing_code') {
+    errorMessage = 'Missing authentication code. Please try signing in again.';
+  } else if (errorParam === 'no_user') {
+    errorMessage = 'No user found after authentication. Please try again.';
+  } else if (errorParam === 'no_session') {
+    errorMessage = 'Session could not be established. Please try signing in again.';
+  }
 
   return (
     <div className="space-y-6">

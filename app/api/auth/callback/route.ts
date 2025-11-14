@@ -22,14 +22,43 @@ export async function GET(request: NextRequest) {
   }
 
   const cookieStore = cookies();
+  
+  // Log all cookies before creating Supabase client
+  const allCookiesBefore = cookieStore.getAll();
+  console.log('[Auth Callback] Cookies before exchange:', allCookiesBefore.map(c => ({
+    name: c.name,
+    hasValue: !!c.value,
+    valueLength: c.value?.length || 0,
+  })));
+  
+  // Check specifically for code verifier cookie
+  const codeVerifierCookie = allCookiesBefore.find(c => c.name.includes('code-verifier'));
+  if (!codeVerifierCookie) {
+    console.warn('[Auth Callback] No code-verifier cookie found! This may cause exchangeCodeForSession to fail.');
+  } else {
+    console.log('[Auth Callback] Code verifier cookie found:', codeVerifierCookie.name);
+  }
+  
   const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
   
+  console.log('[Auth Callback] Exchanging code for session...');
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    console.error('[Auth Callback] Error exchanging code for session:', error);
-    return NextResponse.redirect(`${origin}/login?error=authentication_failed`);
+    console.error('[Auth Callback] Error exchanging code for session:', {
+      message: error.message,
+      status: error.status,
+      name: error.name,
+      code: error.code,
+    });
+    
+    // Return more specific error information
+    return NextResponse.redirect(
+      `${origin}/login?error=authentication_failed&details=${encodeURIComponent(error.message)}`
+    );
   }
+  
+  console.log('[Auth Callback] Code exchanged successfully, user ID:', data.user?.id);
 
   if (!data.user) {
     console.error('[Auth Callback] No user in session data');

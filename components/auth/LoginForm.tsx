@@ -55,7 +55,7 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
       const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const redirectTo = `${origin}/api/auth/callback`;
       
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
+      const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
@@ -69,9 +69,16 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
       if (signInError) {
         console.error('[LoginForm] Google sign-in error:', signInError);
         setError(signInError.message);
+        return;
       }
-      // Note: If successful, the browser will redirect to Google, then to callback
-      // No need to manually redirect here
+
+      // CRITICAL: signInWithOAuth returns a URL that we MUST redirect to
+      // This starts the OAuth flow and sets the PKCE code verifier cookie
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        setError('Failed to get OAuth URL. Please try again.');
+      }
     } catch (err) {
       console.error('[LoginForm] Google sign-in error:', err);
       setError(err instanceof Error ? err.message : 'Failed to initiate Google sign-in');

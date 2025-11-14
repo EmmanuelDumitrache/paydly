@@ -13,35 +13,51 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
+  // CRITICAL: Read cookies directly from request headers first
+  // This ensures we capture all cookies, including those set by the client-side OAuth flow
+  const cookieHeader = request.headers.get('cookie') || '';
+  console.log('[Auth Callback] Processing callback with code:', code?.substring(0, 10) + '...');
+  console.log('[Auth Callback] Cookie header length:', cookieHeader.length);
+  
+  // Parse cookies from header manually to see what's available
+  const cookieMap: Record<string, string> = {};
+  if (cookieHeader) {
+    cookieHeader.split(';').forEach(cookie => {
+      const [name, ...valueParts] = cookie.trim().split('=');
+      if (name && valueParts.length > 0) {
+        cookieMap[name] = valueParts.join('=');
+      }
+    });
+  }
+  
+  // Check for code verifier cookie
+  const codeVerifierCookieName = Object.keys(cookieMap).find(name => 
+    name.includes('code-verifier') || name.includes('code_verifier')
+  );
+  
+  if (codeVerifierCookieName) {
+    console.log('[Auth Callback] Code verifier cookie found:', codeVerifierCookieName);
+  } else {
+    console.warn('[Auth Callback] Code verifier cookie NOT found in request headers!');
+    console.warn('[Auth Callback] Available cookie names:', Object.keys(cookieMap).join(', '));
+  }
+  
   // CRITICAL: For proper PKCE cookie handling with Next.js 14+
-  // We must pass cookies as a function that returns the cookie store
-  // This ensures cookies are read fresh on each access
+  // We must pass cookies as a function that returns a fresh cookie store
+  // This ensures cookies are read fresh on each access by Supabase
   const cookieStore = cookies();
   
   // Force reading all cookies from request to ensure they're available
   // Next.js lazily evaluates cookies, so we must explicitly read them first
   const allCookies = cookieStore.getAll();
+  console.log('[Auth Callback] Cookies from cookieStore:', allCookies.map(c => c.name).join(', '));
   
   // Create Supabase client with proper cookie handling
-  // The cookies function must return a fresh cookie store each time
+  // IMPORTANT: The cookies function must return a function that provides cookies
+  // This allows Supabase to read cookies fresh on each access
   const supabase = createRouteHandlerClient<Database>({ 
     cookies: () => cookieStore,
   });
-  
-  // Log cookies for debugging
-  const cookieHeader = request.headers.get('cookie') || '';
-  console.log('[Auth Callback] Processing callback with code:', code?.substring(0, 10) + '...');
-  console.log('[Auth Callback] Cookie header length:', cookieHeader.length);
-  console.log('[Auth Callback] Available cookies:', allCookies.map(c => c.name).join(', '));
-  
-  // Check for code_verifier cookie (Supabase stores it with pattern: sb-<project>-auth-token-code-verifier)
-  const codeVerifierCookie = allCookies.find(c => c.name.includes('code-verifier'));
-  if (codeVerifierCookie && codeVerifierCookie.value) {
-    console.log('[Auth Callback] Code verifier cookie found:', codeVerifierCookie.name.substring(0, 20) + '...');
-  } else {
-    console.warn('[Auth Callback] Code verifier cookie NOT found!');
-    console.warn('[Auth Callback] This may cause PKCE exchange to fail');
-  }
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 

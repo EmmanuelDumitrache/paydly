@@ -15,11 +15,19 @@ export async function GET(request: Request) {
   }
 
   const code = url.searchParams.get('code');
-  const stateParam = url.searchParams.get('state');
+  const stateParamRaw = url.searchParams.get('state');
 
-  if (!code || !stateParam) {
+  if (!code || !stateParamRaw) {
+    console.error('[Xero Callback] Missing code or state parameter');
     return NextResponse.redirect(`${origin}/settings?xero=missing_params`);
   }
+
+  // Decode the state parameter (URLSearchParams.get() should auto-decode, but be explicit)
+  const stateParam = decodeURIComponent(stateParamRaw);
+  
+  console.log('[Xero Callback] Received callback');
+  console.log('[Xero Callback] State param from URL (first 30 chars):', stateParam.substring(0, 30) + '...');
+  console.log('[Xero Callback] State param full length:', stateParam.length);
 
   const cookieStore = cookies();
   const storedState = cookieStore.get('xero_oauth_state')?.value;

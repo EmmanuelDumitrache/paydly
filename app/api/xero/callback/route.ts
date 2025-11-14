@@ -65,7 +65,7 @@ export async function GET(request: Request) {
       });
       
       const response = NextResponse.redirect(
-        `${origin}/settings?xero=tenant_in_use&details=${encodeURIComponent('This Xero account is already connected to another Paydly account. Please disconnect it from the other account first or use a different Xero account.')}`
+        `${origin}/settings?xero=tenant_in_use&details=${encodeURIComponent('Xero account already in use! This account is already connected to another Paydly account. Please disconnect it from the other account first or use a different Xero account.')}`
       );
       response.cookies.set('xero_oauth_state', '', {
         path: '/',
@@ -91,7 +91,7 @@ export async function GET(request: Request) {
       // Fallback: Handle unique constraint violation if check above somehow fails
       if ((updateError as { code?: string }).code === '23505') {
         const response = NextResponse.redirect(
-          `${origin}/settings?xero=tenant_in_use&details=${encodeURIComponent('This Xero account is already connected to another Paydly account.')}`
+          `${origin}/settings?xero=tenant_in_use&details=${encodeURIComponent('Xero account already in use! This account is already connected to another Paydly account.')}`
         );
         response.cookies.set('xero_oauth_state', '', {
           path: '/',
@@ -112,6 +112,26 @@ export async function GET(request: Request) {
 
     return response;
   } catch (callbackError) {
+    console.error('[Xero Callback] Error:', callbackError);
+    
+    // Check if the error is related to tenant already in use
+    const errorMessage = callbackError instanceof Error ? callbackError.message : String(callbackError);
+    const isTenantInUse = errorMessage.toLowerCase().includes('tenant') || 
+                          errorMessage.toLowerCase().includes('already') ||
+                          errorMessage.toLowerCase().includes('unique') ||
+                          errorMessage.toLowerCase().includes('23505');
+    
+    if (isTenantInUse) {
+      const response = NextResponse.redirect(
+        `${origin}/settings?xero=tenant_in_use&details=${encodeURIComponent('Xero account already in use! This account is already connected to another Paydly account.')}`
+      );
+      response.cookies.set('xero_oauth_state', '', {
+        path: '/',
+        maxAge: 0,
+      });
+      return response;
+    }
+    
     const response = NextResponse.redirect(`${origin}/settings?xero=failed`);
     response.cookies.set('xero_oauth_state', '', {
       path: '/',

@@ -4,9 +4,11 @@ import { differenceInCalendarDays, format } from 'date-fns';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { GlobalPauseToggle } from '@/components/settings/GlobalPauseToggle';
 import { CustomIntervals } from '@/components/settings/CustomIntervals';
+import { XeroErrorToast } from '@/components/settings/XeroErrorToast';
 import { updateAccountProfile, updateReminderSchedule } from './actions';
 
 export default async function SettingsPage({
@@ -50,7 +52,7 @@ export default async function SettingsPage({
     if (!xeroError) return null;
     
     if (xeroError === 'tenant_in_use') {
-      return xeroDetails || 'This Xero account is already connected to another Paydly account. Please disconnect it from the other account first or use a different Xero account.';
+      return xeroDetails || 'Xero account already in use! This account is already connected to another Paydly account. Please disconnect it from the other account first or use a different Xero account.';
     }
     if (xeroError === 'error') {
       return 'Failed to connect Xero. Please try again.';
@@ -76,6 +78,9 @@ export default async function SettingsPage({
 
   return (
     <div className="space-y-8">
+      <Suspense fallback={null}>
+        <XeroErrorToast />
+      </Suspense>
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
         <p className="text-sm text-slate-500">Manage your reminders, Xero connection, and billing details.</p>

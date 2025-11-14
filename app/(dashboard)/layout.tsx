@@ -27,43 +27,52 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   let profile: any = null;
 
   if (user) {
-    // ⚠️ IMPORTANT: Use exact same query pattern as getDashboardData (lib/data/dashboard.ts)
-    // DO NOT add .eq('id', user.id) - let RLS handle user filtering
-    // DO NOT use specific column selects - use .select('*') for consistency
-    // See docs/XERO_CONNECTION_STATUS_FIX.md for details
-    const { data: profileRow, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .maybeSingle();
+    try {
+      // ⚠️ IMPORTANT: Use exact same query pattern as getDashboardData (lib/data/dashboard.ts)
+      // DO NOT add .eq('id', user.id) - let RLS handle user filtering
+      // DO NOT use specific column selects - use .select('*') for consistency
+      // See docs/XERO_CONNECTION_STATUS_FIX.md for details
+      const { data: profileRow, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .maybeSingle();
 
-    profile = profileRow;
+      if (profileError) {
+        console.error('[DashboardLayout] Profile query error:', profileError);
+        // Continue with default values if profile query fails
+      } else {
+        profile = profileRow;
 
-    console.log('[DashboardLayout] Profile query result:', {
-      userId: user.id,
-      profileData: profile,
-      profileError,
-      xero_tenant_id: profile?.xero_tenant_id,
-      xero_tenant_name: profile?.xero_tenant_name,
-    });
+        console.log('[DashboardLayout] Profile query result:', {
+          userId: user.id,
+          profileData: profile,
+          xero_tenant_id: profile?.xero_tenant_id,
+          xero_tenant_name: profile?.xero_tenant_name,
+        });
 
-    xeroConnected = Boolean(profile?.xero_tenant_id);
-    lastSyncAt = profile?.updated_at || null;
-    subscriptionStatus =
-      (profile?.subscription_status as 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired') || 'trialing';
-    reminderSendCount = profile?.reminder_send_count ?? 0;
+        xeroConnected = Boolean(profile?.xero_tenant_id);
+        lastSyncAt = profile?.updated_at || null;
+        subscriptionStatus =
+          (profile?.subscription_status as 'trialing' | 'active' | 'cancelled' | 'past_due' | 'expired') || 'trialing';
+        reminderSendCount = profile?.reminder_send_count ?? 0;
 
-    trialEndsAt = profile?.trial_ends_at ?? null;
+        trialEndsAt = profile?.trial_ends_at ?? null;
 
-    if (xeroConnected && profile?.xero_tenant_name) {
-      xeroTenantName = profile.xero_tenant_name;
+        if (xeroConnected && profile?.xero_tenant_name) {
+          xeroTenantName = profile.xero_tenant_name;
+        }
+      }
+
+      console.log('[DashboardLayout] Computed values:', {
+        xeroConnected,
+        xeroTenantName,
+        lastSyncAt,
+        subscriptionStatus,
+      });
+    } catch (error) {
+      console.error('[DashboardLayout] Unexpected error fetching profile:', error);
+      // Continue with default values on error
     }
-
-    console.log('[DashboardLayout] Computed values:', {
-      xeroConnected,
-      xeroTenantName,
-      lastSyncAt,
-      subscriptionStatus,
-    });
   }
 
   const trialLimit = TRIAL_REMINDER_LIMIT;

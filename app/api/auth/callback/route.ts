@@ -83,13 +83,16 @@ export async function GET(request: NextRequest) {
   }
 
   // Verify session is set before redirecting
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    console.error('[Auth Callback] No session after exchangeCodeForSession');
+  // Get session using the supabase client to ensure cookies are properly set
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError || !session) {
+    console.error('[Auth Callback] No session after exchangeCodeForSession:', sessionError);
     return NextResponse.redirect(`${origin}/login?error=no_session`);
   }
 
   console.log('[Auth Callback] Successfully authenticated user:', userId);
+  console.log('[Auth Callback] Session token exists:', !!session.access_token);
 
   // Check cookies that should be set by Supabase
   const allCookies = cookieStore.getAll();
@@ -99,19 +102,27 @@ export async function GET(request: NextRequest) {
   const supabaseCookies = allCookies.filter(c => c.name.startsWith('sb-'));
   console.log('[Auth Callback] Supabase auth cookies found:', supabaseCookies.map(c => c.name));
 
-  // Redirect to dashboard
-  // The cookies should be set automatically by createRouteHandlerClient
-  // Copy all cookies to ensure session is preserved
+  // Create redirect response
+  // Supabase's createRouteHandlerClient automatically manages cookies in the cookieStore
+  // We need to ensure the redirect response includes all cookies from the cookie store
   const redirectResponse = NextResponse.redirect(`${origin}/dashboard`);
   
+  // Copy ALL cookies from the cookie store to the redirect response
+  // This ensures session cookies set by Supabase are preserved across the redirect
   allCookies.forEach((cookie) => {
     redirectResponse.cookies.set(cookie.name, cookie.value, {
       path: '/',
+      // Supabase auth cookies are httpOnly
       httpOnly: cookie.name.startsWith('sb-') || cookie.name.includes('auth'),
       secure: origin.startsWith('https'),
       sameSite: 'lax',
+      // Code verifier cookies expire in 10 minutes
+      maxAge: cookie.name.includes('code-verifier') ? 600 : undefined,
     });
   });
+  
+  console.log('[Auth Callback] Redirecting to dashboard');
+  console.log('[Auth Callback] Cookies being set on redirect:', redirectResponse.cookies.getAll().map(c => c.name));
   
   return redirectResponse;
 }

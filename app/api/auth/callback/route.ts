@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 import type { Database } from '@/types/database';
@@ -9,8 +9,16 @@ export async function GET(request: NextRequest) {
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? requestUrl.origin;
   const code = requestUrl.searchParams.get('code');
 
+  // Set headers to prevent caching issues that can affect cookie handling
+  const headers = new Headers();
+  headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  headers.set('Pragma', 'no-cache');
+  headers.set('Expires', '0');
+
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=missing_code`);
+    const redirectResponse = NextResponse.redirect(`${origin}/login?error=missing_code`);
+    headers.forEach((value, key) => redirectResponse.headers.set(key, value));
+    return redirectResponse;
   }
 
   // CRITICAL: Read cookies directly from request headers first
@@ -43,28 +51,120 @@ export async function GET(request: NextRequest) {
   }
   
   // CRITICAL: For proper PKCE cookie handling with Next.js 14+
-  // We must pass cookies as a function that returns a fresh cookie store
-  // This ensures cookies are read fresh on each access by Supabase
+  // Create response object first to set cookies on it
+  const response = NextResponse.next();
   const cookieStore = cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  
+  // CRITICAL: Parse cookies directly from request headers to ensure we get ALL cookies
+  // Sometimes Next.js cookies() doesn't catch all cookies, especially ones set by browser
+  const requestCookies: Array<{ name: string; value: string }> = [];
+  if (cookieHeader) {
+    cookieHeader.split(';').forEach(cookie => {
+      const [name, ...valueParts] = cookie.trim().split('=');
+      if (name && valueParts.length > 0) {
+        const value = valueParts.join('=');
+        requestCookies.push({ name, value });
+      }
+    });
+  }
   
   // Force reading all cookies from request to ensure they're available
   // Next.js lazily evaluates cookies, so we must explicitly read them first
   const allCookies = cookieStore.getAll();
   console.log('[Auth Callback] Cookies from cookieStore:', allCookies.map(c => c.name).join(', '));
+  console.log('[Auth Callback] Cookies from request header:', requestCookies.map(c => c.name).join(', '));
   
-  // Create Supabase client with proper cookie handling
-  // IMPORTANT: The cookies function must return a function that provides cookies
-  // This allows Supabase to read cookies fresh on each access
-  const supabase = createRouteHandlerClient<Database>({ 
-    cookies: () => cookieStore,
+  // Create Supabase client with proper cookie handling using @supabase/ssr
+  // IMPORTANT: We merge cookies from both cookieStore and request headers to ensure we don't miss any
+  const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        // CRITICAL: Supabase expects cookies in format { name: string, value: string }
+        // We prioritize request header cookies as they're the actual cookies sent by browser
+        const cookieMap = new Map<string, { name: string; value: string }>();
+        
+        // First add cookies from cookieStore (these are parsed by Next.js)
+        const storeCookies = cookieStore.getAll();
+        storeCookies.forEach(c => {
+          if (c.value && c.value.length > 0) {
+            cookieMap.set(c.name, { name: c.name, value: c.value });
+          }
+        });
+        
+        // Then add/override with cookies from request headers (these are raw cookies from browser)
+        // This ensures we capture cookies that Next.js might not have parsed correctly
+        requestCookies.forEach(c => {
+          if (c.value && c.value.length > 0) {
+            cookieMap.set(c.name, c);
+          }
+        });
+        
+        const allCookies = Array.from(cookieMap.values());
+        console.log('[Auth Callback] Supabase getAll() returning cookies:', allCookies.map(c => c.name).join(', '));
+        return allCookies;
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          cookieStore.set(name, value, options);
+          // Also set on response for redirect
+          response.cookies.set(name, value, {
+            ...options,
+            path: options?.path || '/',
+            sameSite: options?.sameSite || 'lax',
+            secure: options?.secure ?? origin.startsWith('https'),
+          });
+        });
+      },
+    },
   });
+
+  // Before exchanging, log all available cookies one more time
+  const finalCookies = cookieStore.getAll();
+  console.log('[Auth Callback] Final cookies before exchange:', finalCookies.map(c => ({
+    name: c.name,
+    hasValue: !!c.value && c.value.length > 0,
+    valueLength: c.value?.length || 0,
+  })));
+  
+  // Check specifically for Supabase code verifier cookie pattern
+  // Supabase uses pattern: sb-<project-ref>-auth-token-code-verifier
+  const supabaseProjectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+  const expectedCodeVerifierName = supabaseProjectRef 
+    ? `sb-${supabaseProjectRef}-auth-token-code-verifier`
+    : null;
+  
+  if (expectedCodeVerifierName) {
+    const codeVerifierCookie = finalCookies.find(c => c.name === expectedCodeVerifierName);
+    if (codeVerifierCookie && codeVerifierCookie.value) {
+      console.log('[Auth Callback] Found expected code verifier cookie:', expectedCodeVerifierName);
+    } else {
+      console.error('[Auth Callback] Expected code verifier cookie NOT found:', expectedCodeVerifierName);
+      console.error('[Auth Callback] Available cookie names:', finalCookies.map(c => c.name).join(', '));
+    }
+  }
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return NextResponse.redirect(
+    console.error('[Auth Callback] Exchange error:', error.message);
+    console.error('[Auth Callback] Error details:', JSON.stringify(error, null, 2));
+    
+    // Log comprehensive debugging info
+    console.error('[Auth Callback] ========== DEBUG INFO ==========');
+    console.error('[Auth Callback] Code received:', code?.substring(0, 20) + '...');
+    console.error('[Auth Callback] All cookies in request:', Object.keys(cookieMap).join(', '));
+    console.error('[Auth Callback] Code verifier cookie present:', !!codeVerifierCookieName);
+    console.error('[Auth Callback] Expected code verifier name:', expectedCodeVerifierName);
+    console.error('[Auth Callback] Final cookies count:', finalCookies.length);
+    console.error('[Auth Callback] =================================');
+    
+    const errorRedirect = NextResponse.redirect(
       `${origin}/login?error=authentication_failed&details=${encodeURIComponent(error.message)}`
     );
+    headers.forEach((value, key) => errorRedirect.headers.set(key, value));
+    return errorRedirect;
   }
 
   if (!data.user) {
@@ -93,12 +193,10 @@ export async function GET(request: NextRequest) {
   }
 
   // If profile exists but doesn't have trial info, set it up (for OAuth users)
-  // @ts-expect-error - TypeScript type inference issue with Supabase query result types
   if (finalProfileResult?.data && !finalProfileResult.data.trial_ends_at) {
     const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
     await supabase
       .from('profiles')
-      // @ts-expect-error - TypeScript type inference issue with Supabase update
       .update({
         subscription_status: 'trialing',
         trial_ends_at: trialEndsAt,
@@ -110,7 +208,6 @@ export async function GET(request: NextRequest) {
   if (userEmail) {
     await supabase
       .from('profiles')
-      // @ts-expect-error - TypeScript type inference issue with Supabase update
       .update({ email: userEmail })
       .eq('id', userId)
       .is('email', null);
@@ -118,16 +215,15 @@ export async function GET(request: NextRequest) {
 
   // Create redirect response
   // Supabase automatically sets session cookies during exchangeCodeForSession
-  // We need to ensure all cookies are preserved in the response
+  // The cookies are already set on the response object via setAll callback
   const redirectResponse = NextResponse.redirect(`${origin}/dashboard`);
+  // Add cache control headers
+  headers.forEach((value, key) => redirectResponse.headers.set(key, value));
   
-  // Get all cookies after the exchange (Supabase sets new session cookies here)
-  // Read from the cookieStore again to get any cookies Supabase may have set
+  // Copy all cookies from cookieStore to redirect response
+  // This ensures all cookies set by Supabase are preserved
   const cookiesAfterExchange = cookieStore.getAll();
-  
-  // Preserve all cookies in the redirect response
   cookiesAfterExchange.forEach((cookie) => {
-    // Only set cookies that have values
     if (cookie.value && cookie.value.length > 0) {
       redirectResponse.cookies.set(cookie.name, cookie.value, {
         path: '/',
@@ -137,8 +233,6 @@ export async function GET(request: NextRequest) {
         // Session cookies should persist longer
         maxAge: cookie.name.includes('session') || cookie.name.includes('access') 
           ? 60 * 60 * 24 * 7  // 7 days
-          : cookie.name.includes('code-verifier')
-          ? undefined  // Don't set maxAge for code verifier (should be short-lived anyway)
           : undefined,
       });
     }

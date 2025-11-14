@@ -36,6 +36,26 @@ export default function LoginPage({
 
   return (
     <div className="space-y-6">
+      {errorMessage && (
+        <div className="rounded-md bg-red-50 border-2 border-red-300 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-base font-semibold text-red-800 mb-2">⚠️ Authentication Error</h3>
+              <div className="text-sm text-red-700 space-y-2">
+                <p className="font-medium bg-red-100 p-2 rounded">{errorMessage}</p>
+                <p className="text-xs text-red-600">
+                  <strong>Please copy and share:</strong> The full error message above AND the URL shown above.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="space-y-2 text-center">
         <h2 className="text-xl font-semibold text-slate-900">Sign in to your account</h2>
         <p className="text-sm text-slate-600">

@@ -67,11 +67,16 @@ export function SignupForm() {
   const handleGoogleSignUp = async () => {
     setError(null);
     
+    console.log('[SignupForm] ========== STARTING GOOGLE OAUTH ==========');
+    console.log('[SignupForm] Origin:', process.env.NEXT_PUBLIC_APP_URL || window.location.origin);
+    console.log('[SignupForm] Current cookies:', document.cookie);
+    
     try {
-      // IMPORTANT: Use client-side OAuth for proper PKCE cookie handling
-      // Client-side ensures cookies are set in the browser and persist through redirects
       const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const redirectTo = `${origin}/api/auth/callback`;
+      
+      console.log('[SignupForm] Redirect URL:', redirectTo);
+      console.log('[SignupForm] Calling signInWithOAuth...');
       
       const { data, error: signUpError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -84,21 +89,47 @@ export function SignupForm() {
         },
       });
 
+      console.log('[SignupForm] signInWithOAuth response - data:', data);
+      console.log('[SignupForm] signInWithOAuth response - error:', signUpError);
+
       if (signUpError) {
-        console.error('[SignupForm] Google sign-up error:', signUpError);
+        console.error('[SignupForm] ❌ Google sign-up error:', signUpError);
         setError(signUpError.message);
         return;
       }
 
-      // CRITICAL: signInWithOAuth returns a URL that we MUST redirect to
-      // This starts the OAuth flow and sets the PKCE code verifier cookie
       if (data?.url) {
+        console.log('[SignupForm] ✅ Got OAuth URL from Supabase');
+        
+        const cookiesAfterOAuthCall = document.cookie;
+        console.log('[SignupForm] Cookies AFTER signInWithOAuth call:', cookiesAfterOAuthCall);
+        
+        const allCookies = cookiesAfterOAuthCall.split(';').map(c => {
+          const [name, ...valueParts] = c.trim().split('=');
+          return { name, value: valueParts.join('=') };
+        });
+        
+        const codeVerifierCookies = allCookies.filter(c => 
+          c.name.includes('code-verifier') || 
+          c.name.includes('code_verifier') ||
+          c.name.includes('codeverifier')
+        );
+        
+        if (codeVerifierCookies.length > 0) {
+          console.log('[SignupForm] ✅ Code verifier cookie found:', codeVerifierCookies.map(c => c.name));
+        } else {
+          console.warn('[SignupForm] ⚠️ WARNING: No code verifier cookie found!');
+          console.warn('[SignupForm] Available cookies:', allCookies.map(c => c.name).join(', '));
+        }
+        
+        console.log('[SignupForm] Redirecting to:', data.url);
         window.location.href = data.url;
       } else {
+        console.error('[SignupForm] ❌ No OAuth URL returned!');
         setError('Failed to get OAuth URL. Please try again.');
       }
     } catch (err) {
-      console.error('[SignupForm] Google sign-up error:', err);
+      console.error('[SignupForm] ❌ Exception during Google sign-up:', err);
       setError(err instanceof Error ? err.message : 'Failed to initiate Google sign-up');
     }
   };

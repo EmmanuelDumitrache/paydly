@@ -1,6 +1,6 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { NextResponse, type NextRequest } from 'next/server';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 
 import type { Database } from '@/types/database';
 
@@ -10,7 +10,27 @@ const ALLOWED_FOR_EXPIRED = ['/billing', '/settings', '/auth/signout'];
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
-  const supabase = createMiddlewareClient<Database>({ req: request, res: response });
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  
+  const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
+          response.cookies.set(name, value, {
+            ...options,
+            path: options?.path || '/',
+            sameSite: options?.sameSite || 'lax',
+            secure: options?.secure ?? request.nextUrl.protocol === 'https:',
+          });
+        });
+      },
+    },
+  });
   
   // Get session - this will refresh if needed
   const {

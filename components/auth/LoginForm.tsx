@@ -49,11 +49,19 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
   const handleGoogleSignIn = async () => {
     setError(null);
     
+    console.log('[LoginForm] ========== STARTING GOOGLE OAUTH ==========');
+    console.log('[LoginForm] Origin:', process.env.NEXT_PUBLIC_APP_URL || window.location.origin);
+    console.log('[LoginForm] Current URL:', window.location.href);
+    console.log('[LoginForm] Current cookies:', document.cookie);
+    
     try {
       // IMPORTANT: Use client-side OAuth for proper PKCE cookie handling
       // Client-side ensures cookies are set in the browser and persist through redirects
       const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const redirectTo = `${origin}/api/auth/callback`;
+      
+      console.log('[LoginForm] Redirect URL:', redirectTo);
+      console.log('[LoginForm] Calling signInWithOAuth...');
       
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -66,8 +74,12 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
         },
       });
 
+      console.log('[LoginForm] signInWithOAuth response - data:', data);
+      console.log('[LoginForm] signInWithOAuth response - error:', signInError);
+
       if (signInError) {
-        console.error('[LoginForm] Google sign-in error:', signInError);
+        console.error('[LoginForm] ❌ Google sign-in error:', signInError);
+        console.error('[LoginForm] Error details:', JSON.stringify(signInError, null, 2));
         setError(signInError.message);
         return;
       }
@@ -75,12 +87,58 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
       // CRITICAL: signInWithOAuth returns a URL that we MUST redirect to
       // This starts the OAuth flow and sets the PKCE code verifier cookie
       if (data?.url) {
+        console.log('[LoginForm] ✅ Got OAuth URL from Supabase');
+        
+        // IMPORTANT: Check cookies AFTER signInWithOAuth call
+        // Supabase should have set the code verifier cookie at this point
+        const cookiesAfterOAuthCall = document.cookie;
+        console.log('[LoginForm] Cookies AFTER signInWithOAuth call:', cookiesAfterOAuthCall);
+        console.log('[LoginForm] All cookies:', document.cookie.split(';').map(c => c.trim()));
+        
+        // Parse all cookies to check for code verifier
+        const allCookies = cookiesAfterOAuthCall.split(';').map(c => {
+          const [name, ...valueParts] = c.trim().split('=');
+          return { name, value: valueParts.join('='), full: c.trim() };
+        });
+        
+        console.log('[LoginForm] Parsed cookies:', allCookies);
+        
+        // Check if Supabase code verifier cookie is present
+        const codeVerifierCookies = allCookies.filter(c => 
+          c.name.includes('code-verifier') || 
+          c.name.includes('code_verifier') ||
+          c.name.includes('codeverifier')
+        );
+        
+        if (codeVerifierCookies.length > 0) {
+          console.log('[LoginForm] ✅ Code verifier cookie(s) found:', codeVerifierCookies.map(c => c.name));
+          codeVerifierCookies.forEach(c => {
+            console.log('[LoginForm]   - Cookie name:', c.name);
+            console.log('[LoginForm]   - Cookie value length:', c.value.length);
+            console.log('[LoginForm]   - Cookie value (first 20 chars):', c.value.substring(0, 20));
+          });
+        } else {
+          console.warn('[LoginForm] ⚠️ WARNING: No code verifier cookie found after signInWithOAuth!');
+          console.warn('[LoginForm] This WILL cause authentication to fail!');
+          console.warn('[LoginForm] Available cookie names:', allCookies.map(c => c.name).join(', '));
+          
+          // Check for any Supabase cookies
+          const supabaseCookies = allCookies.filter(c => c.name.startsWith('sb-'));
+          console.log('[LoginForm] Supabase cookies found:', supabaseCookies.map(c => c.name).join(', '));
+        }
+        
+        console.log('[LoginForm] About to redirect to:', data.url);
+        console.log('[LoginForm] ==========================================');
+        
         window.location.href = data.url;
       } else {
+        console.error('[LoginForm] ❌ No OAuth URL returned from Supabase!');
+        console.error('[LoginForm] Data object:', JSON.stringify(data, null, 2));
         setError('Failed to get OAuth URL. Please try again.');
       }
     } catch (err) {
-      console.error('[LoginForm] Google sign-in error:', err);
+      console.error('[LoginForm] ❌ Exception during Google sign-in:', err);
+      console.error('[LoginForm] Error stack:', err instanceof Error ? err.stack : 'No stack trace');
       setError(err instanceof Error ? err.message : 'Failed to initiate Google sign-in');
     }
   };
@@ -131,7 +189,14 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
         </label>
       </div>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? (
+        <div className="rounded-md bg-red-50 p-4">
+          <p className="text-sm font-medium text-red-800">Error: {error}</p>
+          <p className="mt-2 text-xs text-red-700">
+            Please check your browser console (F12) or terminal for detailed logs.
+          </p>
+        </div>
+      ) : null}
 
       <button
         type="submit"

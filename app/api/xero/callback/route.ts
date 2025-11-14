@@ -24,10 +24,42 @@ export async function GET(request: Request) {
   const cookieStore = cookies();
   const storedState = cookieStore.get('xero_oauth_state')?.value;
 
-  if (!storedState || storedState !== stateParam) {
-    return NextResponse.redirect(`${origin}/settings?xero=invalid_state`);
-  }
+  console.log('[Xero Callback] State validation:');
+  console.log('[Xero Callback] State from URL:', stateParam?.substring(0, 20) + '...');
+  console.log('[Xero Callback] State from cookie:', storedState ? storedState.substring(0, 20) + '...' : 'NOT FOUND');
+  console.log('[Xero Callback] All cookies:', cookieStore.getAll().map(c => c.name).join(', '));
 
+  // Also check raw request headers for cookie
+  const cookieHeader = request.headers.get('cookie') || '';
+  const cookieMap: Record<string, string> = {};
+  if (cookieHeader) {
+    cookieHeader.split(';').forEach(cookie => {
+      const [name, ...valueParts] = cookie.trim().split('=');
+      if (name && valueParts.length > 0) {
+        cookieMap[name] = valueParts.join('=');
+      }
+    });
+  }
+  
+  const stateFromHeader = cookieMap['xero_oauth_state'];
+  console.log('[Xero Callback] State from request header:', stateFromHeader ? stateFromHeader.substring(0, 20) + '...' : 'NOT FOUND');
+
+  // Use state from cookie store, or fallback to request header
+  const finalStoredState = storedState || stateFromHeader;
+
+  if (!finalStoredState || finalStoredState !== stateParam) {
+    console.error('[Xero Callback] ❌ State mismatch or missing!');
+    console.error('[Xero Callback] Expected:', stateParam);
+    console.error('[Xero Callback] Got from cookie:', storedState);
+    console.error('[Xero Callback] Got from header:', stateFromHeader);
+    console.error('[Xero Callback] Cookie header length:', cookieHeader.length);
+    console.error('[Xero Callback] All cookie names in header:', Object.keys(cookieMap).join(', '));
+    return NextResponse.redirect(`${origin}/settings?xero=invalid_state&details=${encodeURIComponent('OAuth session expired. Please try connecting again.')}`);
+  }
+  
+  console.log('[Xero Callback] ✅ State validated successfully');
+
+  // Use stateParam since it matches finalStoredState after validation
   const [userId] = stateParam.split(':');
   const supabase = createClient();
   const {
@@ -35,8 +67,13 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user || user.id !== userId) {
+    console.error('[Xero Callback] ❌ User ID mismatch!');
+    console.error('[Xero Callback] Expected user ID from state:', userId);
+    console.error('[Xero Callback] Actual user ID:', user?.id);
     return NextResponse.redirect(`${origin}/login`);
   }
+  
+  console.log('[Xero Callback] ✅ User validated:', user.id);
 
   try {
     const redirectUri = `${origin}/api/xero/callback`;

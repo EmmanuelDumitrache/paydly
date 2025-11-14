@@ -49,25 +49,15 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
   const handleGoogleSignIn = async () => {
     setError(null);
     
-    console.error('[LoginForm] ========== STARTING SERVER-SIDE GOOGLE OAUTH ==========');
-    
     try {
-      // RADICAL FIX: Use server-side OAuth initiation instead of client-side
-      // This ensures PKCE code verifier cookie is set correctly server-side
+      // Use server-side OAuth initiation for proper PKCE cookie handling
       const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const oauthUrl = `${origin}/api/auth/google`;
       
-      console.error('[LoginForm] Redirecting to server-side OAuth route:', oauthUrl);
-      console.error('[LoginForm] This ensures PKCE cookies are set correctly server-side');
-      
-      // Redirect to server-side OAuth route which will:
-      // 1. Generate OAuth URL server-side with proper cookie handling
-      // 2. Set PKCE code verifier cookie in the response
-      // 3. Redirect to Google OAuth
+      // Redirect to server-side OAuth route
       window.location.href = oauthUrl;
     } catch (err) {
-      console.error('[LoginForm] ❌ Exception during Google sign-in:', err);
-      setError(err instanceof Error ? err.message : 'Failed to initiate Google sign-in');
+      setError('Failed to initiate Google sign-in. Please try again.');
     }
   };
 
@@ -117,17 +107,19 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
         </label>
       </div>
 
-              {error ? (
-                <div className="rounded-md bg-red-50 p-4">
-                  <p className="text-sm font-medium text-red-800">Error: {error}</p>
-                  <p className="mt-2 text-xs text-red-700">
-                    <strong>IMPORTANT:</strong> Open browser console (F12 → Console tab) and check:
-                    <br />1. Make sure console filter is set to show &quot;All levels&quot; (not just Errors)
-                    <br />2. Look for logs starting with [LoginForm]
-                    <br />3. Share all console logs when reporting the issue
-                  </p>
-                </div>
-              ) : null}
+      {error ? (
+        <div className="rounded-md bg-red-50 border border-red-200 p-3">
+          <p className="text-sm font-medium text-red-800">
+            {error.includes('Invalid login credentials') || error.includes('Invalid credentials')
+              ? 'Invalid email or password. Please check your credentials and try again.'
+              : error.includes('too many requests')
+              ? 'Too many sign-in attempts. Please wait a moment and try again.'
+              : error.includes('email not confirmed')
+              ? 'Please verify your email address before signing in. Check your inbox for a confirmation email.'
+              : error}
+          </p>
+        </div>
+      ) : null}
 
       <button
         type="submit"

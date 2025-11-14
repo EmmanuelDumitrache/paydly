@@ -53,12 +53,12 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('[Auth Google] OAuth initiation error:', error);
-    return NextResponse.redirect(`${origin}/login?error=oauth_init_failed&details=${encodeURIComponent(error.message)}`);
+    return NextResponse.redirect(`${origin}/login?error=oauth_init_failed&details=${encodeURIComponent('Google sign-in failed. Please try again.')}`);
   }
 
   if (!data?.url) {
     console.error('[Auth Google] No OAuth URL returned');
-    return NextResponse.redirect(`${origin}/login?error=no_oauth_url`);
+    return NextResponse.redirect(`${origin}/login?error=no_oauth_url&details=${encodeURIComponent('Unable to start Google sign-in. Please try again.')}`);
   }
 
   // Log cookies after OAuth URL generation

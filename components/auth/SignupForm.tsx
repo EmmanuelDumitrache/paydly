@@ -67,25 +67,15 @@ export function SignupForm() {
   const handleGoogleSignUp = async () => {
     setError(null);
     
-    console.error('[SignupForm] ========== STARTING SERVER-SIDE GOOGLE OAUTH ==========');
-    
     try {
-      // RADICAL FIX: Use server-side OAuth initiation instead of client-side
-      // This ensures PKCE code verifier cookie is set correctly server-side
+      // Use server-side OAuth initiation for proper PKCE cookie handling
       const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const oauthUrl = `${origin}/api/auth/google`;
       
-      console.error('[SignupForm] Redirecting to server-side OAuth route:', oauthUrl);
-      console.error('[SignupForm] This ensures PKCE cookies are set correctly server-side');
-      
-      // Redirect to server-side OAuth route which will:
-      // 1. Generate OAuth URL server-side with proper cookie handling
-      // 2. Set PKCE code verifier cookie in the response
-      // 3. Redirect to Google OAuth
+      // Redirect to server-side OAuth route
       window.location.href = oauthUrl;
     } catch (err) {
-      console.error('[SignupForm] ❌ Exception during Google sign-up:', err);
-      setError(err instanceof Error ? err.message : 'Failed to initiate Google sign-up');
+      setError('Failed to initiate Google sign-up. Please try again.');
     }
   };
 

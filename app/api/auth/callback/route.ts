@@ -64,8 +64,20 @@ export async function GET(request: NextRequest) {
     console.error('[Auth Callback] Exchange error:', error.message);
     console.error('[Auth Callback] Error details:', JSON.stringify(error, null, 2));
 
+    // Convert technical error messages to user-friendly ones
+    let friendlyError = 'Sign-in failed. Please try again.';
+    const errorMsg = error.message.toLowerCase();
+    
+    if (errorMsg.includes('code verifier') || errorMsg.includes('code_verifier')) {
+      friendlyError = 'Sign-in failed. Please try signing in again.';
+    } else if (errorMsg.includes('expired') || errorMsg.includes('invalid')) {
+      friendlyError = 'The sign-in link has expired or is invalid. Please try signing in again.';
+    } else if (errorMsg.includes('network') || errorMsg.includes('connection')) {
+      friendlyError = 'Connection error. Please check your internet connection and try again.';
+    }
+
     const errorRedirect = NextResponse.redirect(
-      `${origin}/login?error=authentication_failed&details=${encodeURIComponent(error.message)}`
+      `${origin}/login?error=authentication_failed&details=${encodeURIComponent(friendlyError)}`
     );
     headers.forEach((value, key) => errorRedirect.headers.set(key, value));
     return errorRedirect;

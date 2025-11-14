@@ -17,41 +17,60 @@ export default function LoginPage({
   
   let errorMessage = null;
   if (errorParam === 'authentication_failed') {
-    errorMessage = errorDetails 
-      ? `Authentication failed: ${errorDetails}`
-      : 'Authentication failed. Please try again.';
+    errorMessage = errorDetails || 'Sign-in failed. Please try again.';
   } else if (errorParam === 'oauth_init_failed') {
-    errorMessage = errorDetails 
-      ? `OAuth initialization failed: ${errorDetails}`
-      : 'Failed to initialize Google sign-in. Please try again.';
+    errorMessage = errorDetails || 'Google sign-in failed. Please try again.';
   } else if (errorParam === 'no_oauth_url') {
-    errorMessage = 'Failed to get OAuth URL. Please try again.';
+    errorMessage = errorDetails || 'Unable to start Google sign-in. Please try again.';
   } else if (errorParam === 'missing_code') {
-    errorMessage = 'Missing authentication code. Please try signing in again.';
+    errorMessage = 'Sign-in session expired. Please try signing in again.';
   } else if (errorParam === 'no_user') {
-    errorMessage = 'No user found after authentication. Please try again.';
+    errorMessage = 'Account not found. Please try signing up first.';
   } else if (errorParam === 'no_session') {
-    errorMessage = 'Session could not be established. Please try signing in again.';
+    errorMessage = 'Sign-in session expired. Please try signing in again.';
   }
+
+  // Convert technical error messages to user-friendly ones
+  const getUserFriendlyMessage = (error: string | null): string | null => {
+    if (!error) return null;
+    
+    const lowerError = error.toLowerCase();
+    
+    // Map common technical errors to user-friendly messages
+    if (lowerError.includes('invalid login credentials') || lowerError.includes('invalid credentials')) {
+      return 'Invalid email or password. Please check your credentials and try again.';
+    }
+    if (lowerError.includes('email not confirmed')) {
+      return 'Please verify your email address before signing in. Check your inbox for a confirmation email.';
+    }
+    if (lowerError.includes('too many requests')) {
+      return 'Too many sign-in attempts. Please wait a moment and try again.';
+    }
+    if (lowerError.includes('authentication failed') || lowerError.includes('code verifier')) {
+      return 'Sign-in failed. Please try again or use a different sign-in method.';
+    }
+    if (lowerError.includes('oauth')) {
+      return 'Google sign-in failed. Please try again.';
+    }
+    
+    // Return the error as-is if we don't have a friendly message
+    return error;
+  };
+
+  const friendlyErrorMessage = getUserFriendlyMessage(errorMessage);
 
   return (
     <div className="space-y-6">
-      {errorMessage && (
-        <div className="rounded-md bg-red-50 border-2 border-red-300 p-4 mb-4">
+      {friendlyErrorMessage && (
+        <div className="rounded-md bg-red-50 border border-red-200 p-4">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             </div>
-            <div className="ml-3 flex-1">
-              <h3 className="text-base font-semibold text-red-800 mb-2">⚠️ Authentication Error</h3>
-              <div className="text-sm text-red-700 space-y-2">
-                <p className="font-medium bg-red-100 p-2 rounded">{errorMessage}</p>
-                <p className="text-xs text-red-600">
-                  <strong>Please copy and share:</strong> The full error message above AND the URL shown above.
-                </p>
-              </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-red-800">{friendlyErrorMessage}</p>
             </div>
           </div>
         </div>

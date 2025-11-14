@@ -65,7 +65,7 @@ export async function GET(request: Request) {
       });
       
       const response = NextResponse.redirect(
-        `${origin}/settings?xero=tenant_in_use&details=${encodeURIComponent('This Xero account is already connected to another Paydly account. Please disconnect it first or use a different Xero account.')}`
+        `${origin}/settings?xero=tenant_in_use&details=${encodeURIComponent('This Xero account is already connected to another Paydly account. Please disconnect it from the other account first or use a different Xero account.')}`
       );
       response.cookies.set('xero_oauth_state', '', {
         path: '/',

@@ -30,6 +30,9 @@ export function buildAuthorizeUrl(state: string, redirectUri: string) {
     redirect_uri: redirectUri,
     scope: SCOPES.join(' '),
     state,
+    // Force Xero to show login screen every time, even if user is already logged in
+    // This ensures users don't need to clear cache or logout from Xero
+    prompt: 'select_account',
   });
 
   return `${AUTH_BASE}?${params.toString()}`;

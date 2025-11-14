@@ -50,7 +50,7 @@ export default async function SettingsPage({
     if (!xeroError) return null;
     
     if (xeroError === 'tenant_in_use') {
-      return xeroDetails || 'This Xero account is already connected to another Paydly account. Please disconnect it first or use a different Xero account.';
+      return xeroDetails || 'This Xero account is already connected to another Paydly account. Please disconnect it from the other account first or use a different Xero account.';
     }
     if (xeroError === 'error') {
       return 'Failed to connect Xero. Please try again.';
@@ -62,6 +62,10 @@ export default async function SettingsPage({
       return 'Connection session expired. Please try connecting again.';
     }
     if (xeroError === 'failed') {
+      // Check if it's a tenant_in_use error hidden in details
+      if (xeroDetails && (xeroDetails.toLowerCase().includes('already connected') || xeroDetails.toLowerCase().includes('tenant'))) {
+        return xeroDetails;
+      }
       return 'Failed to connect Xero. Please try again.';
     }
     

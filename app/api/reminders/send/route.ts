@@ -171,6 +171,16 @@ export async function POST(request: Request) {
 
     console.log('[API /api/reminders/send] Email sent successfully', sendResponse);
 
+    // Log to email_history table
+    await supabase.from('email_history').insert({
+      user_id: user.id,
+      sent_at: new Date().toISOString(),
+      reminder_type: reminderType,
+      send_method: 'manual',
+      recipient_email: targetEmail,
+      status: 'sent',
+    });
+
     await supabase.from('reminder_logs').insert({
       invoice_id: invoice.id,
       user_id: user.id,
@@ -207,6 +217,17 @@ export async function POST(request: Request) {
       user_id: user.id,
       reminder_type: reminderType,
       email_status: 'failed',
+      error_message: error instanceof Error ? error.message : 'Unknown error',
+    });
+
+    // Log to email_history table for failed sends
+    await supabase.from('email_history').insert({
+      user_id: user.id,
+      sent_at: new Date().toISOString(),
+      reminder_type: reminderType,
+      send_method: 'manual',
+      recipient_email: targetEmail,
+      status: 'failed',
       error_message: error instanceof Error ? error.message : 'Unknown error',
     });
 

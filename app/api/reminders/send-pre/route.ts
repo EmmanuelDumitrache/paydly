@@ -134,6 +134,16 @@ export async function POST(request: Request) {
 
     console.log('[API /api/reminders/send-pre] Email sent successfully', emailResult);
 
+    // Log to email_history table
+    await supabase.from('email_history').insert({
+      user_id: user.id,
+      sent_at: new Date().toISOString(),
+      reminder_type: 'pre_reminder',
+      send_method: 'manual',
+      recipient_email: invoice.contact_email,
+      status: 'sent',
+    });
+
     try {
       await serviceSupabase.rpc('increment_reminder_send_count', {
         target_user: user.id,
@@ -144,6 +154,16 @@ export async function POST(request: Request) {
     }
   } catch (emailError) {
     console.error('[API /api/reminders/send-pre] Email send failed:', emailError);
+    // Log to email_history table for failed sends
+    await supabase.from('email_history').insert({
+      user_id: user.id,
+      sent_at: new Date().toISOString(),
+      reminder_type: 'pre_reminder',
+      send_method: 'manual',
+      recipient_email: invoice.contact_email,
+      status: 'failed',
+      error_message: emailError instanceof Error ? emailError.message : 'Unknown error',
+    });
     return NextResponse.json(
       { error: 'Failed to send email' },
       { status: 500 }

@@ -10,7 +10,8 @@ import {
   Clock,
   AlertCircle,
   HelpCircle,
-  Mail
+  Mail,
+  History
 } from 'lucide-react';
 
 interface NavItem {
@@ -25,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/overdue', label: 'Overdue', icon: AlertCircle },
   { href: '/invoices', label: 'Invoices', icon: ListChecks },
   { href: '/templates', label: 'Templates', icon: Mail },
+  { href: '/history', label: 'History', icon: History },
   { href: '/settings', label: 'Settings', icon: Settings },
   { href: '/billing', label: 'Billing', icon: CreditCard },
   { href: '/support', label: 'Support', icon: HelpCircle },

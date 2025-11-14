@@ -6,19 +6,18 @@ import type { Database } from '@/types/database';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? requestUrl.origin;
   const code = requestUrl.searchParams.get('code');
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
 
   if (code) {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
       console.error('[Auth Callback] Error exchanging code for session:', error);
       // Redirect to login with error
-      const loginUrl = new URL('/login', requestUrl);
-      loginUrl.searchParams.set('error', 'authentication_failed');
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(`${origin}/login?error=authentication_failed`);
     }
 
     // If user was just created (new OAuth signup), ensure profile is set up
@@ -71,6 +70,15 @@ export async function GET(request: NextRequest) {
   }
 
   // Redirect to dashboard after successful auth
-  return NextResponse.redirect(new URL('/dashboard', requestUrl));
+  // The cookies should already be set by exchangeCodeForSession via createRouteHandlerClient
+  // Copy cookies from the cookie store to the redirect response to ensure they're sent
+  const redirectResponse = NextResponse.redirect(`${origin}/dashboard`);
+  
+  const allCookies = cookieStore.getAll();
+  allCookies.forEach((cookie) => {
+    redirectResponse.cookies.set(cookie.name, cookie.value);
+  });
+  
+  return redirectResponse;
 }
 

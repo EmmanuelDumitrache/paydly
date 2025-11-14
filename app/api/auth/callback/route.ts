@@ -21,25 +21,46 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
+  // Get cookies from both the request headers and the cookie store
+  // The code verifier might be in request headers if it was set client-side
+  const cookieHeader = request.headers.get('cookie') || '';
   const cookieStore = cookies();
   
-  // Log all cookies before creating Supabase client
-  const allCookiesBefore = cookieStore.getAll();
-  console.log('[Auth Callback] Cookies before exchange:', allCookiesBefore.map(c => ({
-    name: c.name,
-    hasValue: !!c.value,
-    valueLength: c.value?.length || 0,
-  })));
+  // Log all cookies from both sources
+  const cookieStoreCookies = cookieStore.getAll();
+  const cookieHeaderNames = cookieHeader ? cookieHeader.split(';').map(c => c.split('=')[0].trim()) : [];
   
-  // Check specifically for code verifier cookie
-  const codeVerifierCookie = allCookiesBefore.find(c => c.name.includes('code-verifier'));
-  if (!codeVerifierCookie) {
-    console.warn('[Auth Callback] No code-verifier cookie found! This may cause exchangeCodeForSession to fail.');
+  console.log('[Auth Callback] Cookies from cookie store:', cookieStoreCookies.map(c => c.name));
+  console.log('[Auth Callback] Cookies from request headers:', cookieHeaderNames);
+  
+  // Check for code verifier in cookie store
+  const codeVerifierInStore = cookieStoreCookies.find(c => c.name.includes('code-verifier'));
+  
+  // Check for code verifier in cookie header (it might be there even if not in cookieStore)
+  const codeVerifierInHeader = cookieHeaderNames.some(name => name.includes('code-verifier'));
+  
+  if (!codeVerifierInStore && !codeVerifierInHeader) {
+    console.error('[Auth Callback] No code-verifier cookie found in store or headers!');
+    console.error('[Auth Callback] This will cause exchangeCodeForSession to fail.');
+    console.error('[Auth Callback] Cookie header:', cookieHeader.substring(0, 200));
   } else {
-    console.log('[Auth Callback] Code verifier cookie found:', codeVerifierCookie.name);
+    if (codeVerifierInStore) {
+      console.log('[Auth Callback] Code verifier found in cookie store:', codeVerifierInStore.name);
+    }
+    if (codeVerifierInHeader) {
+      console.log('[Auth Callback] Code verifier found in request headers');
+    }
   }
   
-  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+  // IMPORTANT: In Next.js, cookies are lazily evaluated.
+  // We must force reading cookies before exchangeCodeForSession to ensure
+  // the code_verifier cookie is available.
+  cookieStore.getAll(); // Force reading all cookies from request
+  
+  // Create Supabase client
+  const supabase = createRouteHandlerClient<Database>({ 
+    cookies: () => cookieStore,
+  });
   
   console.log('[Auth Callback] Exchanging code for session...');
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);

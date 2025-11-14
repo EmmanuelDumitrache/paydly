@@ -8,6 +8,13 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? requestUrl.origin;
   const code = requestUrl.searchParams.get('code');
+  
+  console.log('[Auth Callback] Request received:', {
+    url: requestUrl.toString(),
+    hasCode: !!code,
+    origin,
+    pathname: requestUrl.pathname,
+  });
 
   if (!code) {
     console.error('[Auth Callback] No code parameter found');

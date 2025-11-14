@@ -29,12 +29,18 @@ export async function POST(request: Request) {
 
   if (error) {
     console.error('[Xero Disconnect] Error:', error);
-    return NextResponse.redirect(`${origin}/settings?xero=disconnect_failed&details=${encodeURIComponent('Failed to disconnect Xero. Please try again.')}`);
+    const redirectUrl = new URL('/settings', origin);
+    redirectUrl.searchParams.set('xero', 'disconnect_failed');
+    redirectUrl.searchParams.set('details', 'Failed to disconnect Xero. Please try again.');
+    return NextResponse.redirect(redirectUrl, { status: 303 });
   }
 
   console.log('[Xero Disconnect] Successfully disconnected Xero for user:', user.id);
   
   // Redirect to settings with success message
-  return NextResponse.redirect(`${origin}/settings?xero=disconnected`);
+  // Use 303 See Other for POST redirects (standard for form submissions)
+  const redirectUrl = new URL('/settings', origin);
+  redirectUrl.searchParams.set('xero', 'disconnected');
+  return NextResponse.redirect(redirectUrl, { status: 303 });
 }
 

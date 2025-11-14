@@ -42,6 +42,33 @@ export default async function SettingsPage({
 
   const syncStatus = typeof searchParams.sync === 'string' ? searchParams.sync : null;
   const syncMessage = typeof searchParams.message === 'string' ? searchParams.message : null;
+  const xeroError = typeof searchParams.xero === 'string' ? searchParams.xero : null;
+  const xeroDetails = typeof searchParams.details === 'string' ? searchParams.details : null;
+
+  // Map Xero error codes to user-friendly messages
+  const getXeroErrorMessage = () => {
+    if (!xeroError) return null;
+    
+    if (xeroError === 'tenant_in_use') {
+      return xeroDetails || 'This Xero account is already connected to another Paydly account. Please disconnect it first or use a different Xero account.';
+    }
+    if (xeroError === 'error') {
+      return 'Failed to connect Xero. Please try again.';
+    }
+    if (xeroError === 'missing_params') {
+      return 'Missing connection parameters. Please try connecting again.';
+    }
+    if (xeroError === 'invalid_state') {
+      return 'Connection session expired. Please try connecting again.';
+    }
+    if (xeroError === 'failed') {
+      return 'Failed to connect Xero. Please try again.';
+    }
+    
+    return 'Xero connection failed. Please try again.';
+  };
+
+  const xeroErrorMessage = getXeroErrorMessage();
 
   return (
     <div className="space-y-8">
@@ -59,6 +86,12 @@ export default async function SettingsPage({
           }`}
         >
           {syncMessage}
+        </div>
+      ) : null}
+
+      {xeroErrorMessage ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-sm text-rose-700">
+          {xeroErrorMessage}
         </div>
       ) : null}
 

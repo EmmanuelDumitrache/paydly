@@ -49,10 +49,16 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
   const handleGoogleSignIn = async () => {
     setError(null);
     
-    console.log('[LoginForm] ========== STARTING GOOGLE OAUTH ==========');
-    console.log('[LoginForm] Origin:', process.env.NEXT_PUBLIC_APP_URL || window.location.origin);
-    console.log('[LoginForm] Current URL:', window.location.href);
-    console.log('[LoginForm] Current cookies:', document.cookie);
+    // CRITICAL: Use console.error for all logs to ensure they're visible even if console is filtered
+    console.error('==========================================');
+    console.error('[LoginForm] ========== STARTING GOOGLE OAUTH ==========');
+    console.error('[LoginForm] Origin:', process.env.NEXT_PUBLIC_APP_URL || window.location.origin);
+    console.error('[LoginForm] Current URL:', window.location.href);
+    console.error('[LoginForm] Current cookies:', document.cookie);
+    console.error('==========================================');
+    
+    // Also show in UI for debugging
+    setError('⚠️ Check browser console (F12) for OAuth logs...');
     
     try {
       // IMPORTANT: Use client-side OAuth for proper PKCE cookie handling
@@ -60,8 +66,8 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
       const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const redirectTo = `${origin}/api/auth/callback`;
       
-      console.log('[LoginForm] Redirect URL:', redirectTo);
-      console.log('[LoginForm] Calling signInWithOAuth...');
+      console.error('[LoginForm] Redirect URL:', redirectTo);
+      console.error('[LoginForm] Calling signInWithOAuth...');
       
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -74,8 +80,8 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
         },
       });
 
-      console.log('[LoginForm] signInWithOAuth response - data:', data);
-      console.log('[LoginForm] signInWithOAuth response - error:', signInError);
+      console.error('[LoginForm] signInWithOAuth response - data:', data);
+      console.error('[LoginForm] signInWithOAuth response - error:', signInError);
 
       if (signInError) {
         console.error('[LoginForm] ❌ Google sign-in error:', signInError);
@@ -87,48 +93,67 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
       // CRITICAL: signInWithOAuth returns a URL that we MUST redirect to
       // This starts the OAuth flow and sets the PKCE code verifier cookie
       if (data?.url) {
-        console.log('[LoginForm] ✅ Got OAuth URL from Supabase');
+        console.error('[LoginForm] ✅ Got OAuth URL from Supabase');
         
-        // IMPORTANT: Check cookies AFTER signInWithOAuth call
+        // IMPORTANT: Wait a moment for cookie to be set by Supabase
+        // Sometimes there's a timing issue where cookie isn't immediately available
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // IMPORTANT: Check cookies AFTER signInWithOAuth call and after delay
         // Supabase should have set the code verifier cookie at this point
         const cookiesAfterOAuthCall = document.cookie;
-        console.log('[LoginForm] Cookies AFTER signInWithOAuth call:', cookiesAfterOAuthCall);
-        console.log('[LoginForm] All cookies:', document.cookie.split(';').map(c => c.trim()));
+        console.error('[LoginForm] Cookies AFTER signInWithOAuth call (after 100ms delay):', cookiesAfterOAuthCall);
         
         // Parse all cookies to check for code verifier
-        const allCookies = cookiesAfterOAuthCall.split(';').map(c => {
+        const allCookies = cookiesAfterOAuthCall ? cookiesAfterOAuthCall.split(';').map(c => {
           const [name, ...valueParts] = c.trim().split('=');
           return { name, value: valueParts.join('='), full: c.trim() };
-        });
+        }) : [];
         
-        console.log('[LoginForm] Parsed cookies:', allCookies);
+        console.error('[LoginForm] Parsed cookies count:', allCookies.length);
+        console.error('[LoginForm] All cookie names:', allCookies.map(c => c.name).join(', '));
         
         // Check if Supabase code verifier cookie is present
+        // Supabase uses pattern: sb-<project-ref>-auth-token-code-verifier
         const codeVerifierCookies = allCookies.filter(c => 
           c.name.includes('code-verifier') || 
           c.name.includes('code_verifier') ||
-          c.name.includes('codeverifier')
+          c.name.includes('codeverifier') ||
+          c.name.includes('auth-token')
         );
         
+        // Also check for any sb- cookies
+        const supabaseCookies = allCookies.filter(c => c.name.startsWith('sb-'));
+        console.error('[LoginForm] Supabase cookies found:', supabaseCookies.map(c => c.name).join(', '));
+        
         if (codeVerifierCookies.length > 0) {
-          console.log('[LoginForm] ✅ Code verifier cookie(s) found:', codeVerifierCookies.map(c => c.name));
+          console.error('[LoginForm] ✅ Code verifier cookie(s) found:', codeVerifierCookies.map(c => c.name));
           codeVerifierCookies.forEach(c => {
-            console.log('[LoginForm]   - Cookie name:', c.name);
-            console.log('[LoginForm]   - Cookie value length:', c.value.length);
-            console.log('[LoginForm]   - Cookie value (first 20 chars):', c.value.substring(0, 20));
+            console.error('[LoginForm]   - Cookie name:', c.name);
+            console.error('[LoginForm]   - Cookie value length:', c.value.length);
+            console.error('[LoginForm]   - Cookie value (first 20 chars):', c.value.substring(0, 20));
           });
         } else {
-          console.warn('[LoginForm] ⚠️ WARNING: No code verifier cookie found after signInWithOAuth!');
-          console.warn('[LoginForm] This WILL cause authentication to fail!');
-          console.warn('[LoginForm] Available cookie names:', allCookies.map(c => c.name).join(', '));
+          console.error('[LoginForm] ⚠️⚠️⚠️ WARNING: No code verifier cookie found after signInWithOAuth!');
+          console.error('[LoginForm] This WILL cause authentication to fail!');
+          console.error('[LoginForm] Available cookie names:', allCookies.map(c => c.name).join(', '));
           
-          // Check for any Supabase cookies
-          const supabaseCookies = allCookies.filter(c => c.name.startsWith('sb-'));
-          console.log('[LoginForm] Supabase cookies found:', supabaseCookies.map(c => c.name).join(', '));
+          // Try to manually check cookie via getCookie function
+          const supabaseProjectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+          if (supabaseProjectRef) {
+            const expectedCookieName = `sb-${supabaseProjectRef}-auth-token-code-verifier`;
+            console.error('[LoginForm] Expected cookie name:', expectedCookieName);
+            const cookieValue = document.cookie.split(';').find(c => c.trim().startsWith(expectedCookieName + '='));
+            if (cookieValue) {
+              console.error('[LoginForm] Found expected cookie via manual check:', cookieValue.substring(0, 50));
+            } else {
+              console.error('[LoginForm] Expected cookie NOT found via manual check');
+            }
+          }
         }
         
-        console.log('[LoginForm] About to redirect to:', data.url);
-        console.log('[LoginForm] ==========================================');
+        console.error('[LoginForm] About to redirect to:', data.url);
+        console.error('[LoginForm] ==========================================');
         
         window.location.href = data.url;
       } else {
@@ -189,14 +214,17 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
         </label>
       </div>
 
-      {error ? (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm font-medium text-red-800">Error: {error}</p>
-          <p className="mt-2 text-xs text-red-700">
-            Please check your browser console (F12) or terminal for detailed logs.
-          </p>
-        </div>
-      ) : null}
+              {error ? (
+                <div className="rounded-md bg-red-50 p-4">
+                  <p className="text-sm font-medium text-red-800">Error: {error}</p>
+                  <p className="mt-2 text-xs text-red-700">
+                    <strong>IMPORTANT:</strong> Open browser console (F12 → Console tab) and check:
+                    <br />1. Make sure console filter is set to show "All levels" (not just Errors)
+                    <br />2. Look for logs starting with [LoginForm]
+                    <br />3. Share all console logs when reporting the issue
+                  </p>
+                </div>
+              ) : null}
 
       <button
         type="submit"

@@ -219,7 +219,7 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
                   <p className="text-sm font-medium text-red-800">Error: {error}</p>
                   <p className="mt-2 text-xs text-red-700">
                     <strong>IMPORTANT:</strong> Open browser console (F12 → Console tab) and check:
-                    <br />1. Make sure console filter is set to show "All levels" (not just Errors)
+                    <br />1. Make sure console filter is set to show &quot;All levels&quot; (not just Errors)
                     <br />2. Look for logs starting with [LoginForm]
                     <br />3. Share all console logs when reporting the issue
                   </p>

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = createClient();
   const {
     data: { user },
@@ -13,6 +13,9 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const url = new URL(request.url);
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? url.origin;
+
   const { error } = await supabase
     .from('profiles')
     .update({
@@ -20,13 +23,18 @@ export async function POST() {
       xero_refresh_token: null,
       xero_token_expires_at: null,
       xero_tenant_id: null,
+      xero_tenant_name: null,
     })
     .eq('id', user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[Xero Disconnect] Error:', error);
+    return NextResponse.redirect(`${origin}/settings?xero=disconnect_failed&details=${encodeURIComponent('Failed to disconnect Xero. Please try again.')}`);
   }
 
-  return NextResponse.json({ disconnected: true });
+  console.log('[Xero Disconnect] Successfully disconnected Xero for user:', user.id);
+  
+  // Redirect to settings with success message
+  return NextResponse.redirect(`${origin}/settings?xero=disconnected`);
 }
 

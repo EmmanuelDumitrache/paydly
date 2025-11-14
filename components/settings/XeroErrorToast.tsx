@@ -12,7 +12,17 @@ export function XeroErrorToast() {
   useEffect(() => {
     if (!xeroError) return;
 
-    if (xeroError === 'tenant_in_use') {
+    if (xeroError === 'disconnected') {
+      toast.success('Xero Disconnected', {
+        description: 'Your Xero account has been successfully disconnected.',
+        duration: 5000,
+      });
+    } else if (xeroError === 'disconnect_failed') {
+      toast.error('Failed to Disconnect Xero', {
+        description: xeroDetails || 'Please try again.',
+        duration: 5000,
+      });
+    } else if (xeroError === 'tenant_in_use') {
       toast.error('Xero Account Already in Use!', {
         description: xeroDetails || 'This Xero account is already connected to another Paydly account. Please disconnect it from the other account first or use a different Xero account.',
         duration: 6000,

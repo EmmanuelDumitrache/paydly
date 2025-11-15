@@ -1,6 +1,67 @@
+'use client';
+
 import Link from 'next/link';
+import { useState, useEffect, useRef } from 'react';
+
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  status: string;
+}
+
+const INVOICE_POOL: Invoice[] = [
+  { id: '1', invoiceNumber: 'INV-0234', status: '14-day reminder sent' },
+  { id: '2', invoiceNumber: 'INV-0198', status: 'Scheduled for tomorrow' },
+  { id: '3', invoiceNumber: 'INV-0156', status: 'Payment received' },
+  { id: '4', invoiceNumber: 'INV-0287', status: '7-day reminder sent' },
+  { id: '5', invoiceNumber: 'INV-0312', status: '21-day reminder sent' },
+  { id: '6', invoiceNumber: 'INV-0245', status: 'New invoice tracked' },
+  { id: '7', invoiceNumber: 'INV-0298', status: 'Payment received' },
+  { id: '8', invoiceNumber: 'INV-0331', status: 'Scheduled for next week' },
+];
 
 export function Hero() {
+  const [displayedInvoices, setDisplayedInvoices] = useState<Invoice[]>(INVOICE_POOL.slice(0, 3));
+  const nextIndexRef = useRef(3);
+  const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
+  const [enteringIds, setEnteringIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDisplayedInvoices((prev) => {
+        // Mark the oldest invoice for exit
+        const oldestInvoice = prev[0];
+        setExitingIds(new Set([oldestInvoice.id]));
+
+        // After exit animation, remove it and add new one
+        setTimeout(() => {
+          setDisplayedInvoices((current) => {
+            const newInvoices = [...current.slice(1)];
+            const nextInvoice = INVOICE_POOL[nextIndexRef.current % INVOICE_POOL.length];
+            newInvoices.push(nextInvoice);
+            
+            // Mark new invoice for entry animation
+            setEnteringIds(new Set([nextInvoice.id]));
+            
+            // Clear exit animation after a moment
+            setTimeout(() => {
+              setExitingIds(new Set());
+              setEnteringIds(new Set());
+            }, 500);
+            
+            nextIndexRef.current = (nextIndexRef.current + 1) % INVOICE_POOL.length;
+            
+            return newInvoices;
+          });
+        }, 500);
+        
+        return prev;
+      });
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <section className="relative overflow-hidden bg-slate-900 py-24 text-white" id="hero">
       <div className="absolute inset-0">
@@ -12,8 +73,11 @@ export function Hero() {
           <span className="inline-flex items-center rounded-full bg-indigo-500/20 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-200">
             Get paid faster
           </span>
-          <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">
-            Stop chasing late payments. Get paid 40% faster with Paydly.
+          <h1 className="relative text-4xl font-semibold leading-tight sm:text-5xl">
+            <span className="relative inline-block">
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent bg-[length:200%_100%] animate-light-sweep" />
+              <span className="relative">Stop chasing late payments. Get paid 40% faster with Paydly.</span>
+            </span>
           </h1>
           <p className="max-w-xl text-lg text-indigo-100">
             Paydly connects to your Xero account, tracks overdue invoices, and sends polite reminders at 7, 14, and 21 days overdue. Set it once and focus on billable work.
@@ -46,19 +110,23 @@ export function Hero() {
         <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
           <div className="space-y-4">
             <p className="text-sm uppercase tracking-wide text-indigo-200">Automations in progress</p>
-            <ul className="space-y-3 text-sm text-indigo-100">
-              <li className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
-                <span className="font-medium text-white">Invoice INV-0234</span>
-                <span className="text-xs text-indigo-200">14-day reminder sent</span>
-              </li>
-              <li className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
-                <span className="font-medium text-white">Invoice INV-0198</span>
-                <span className="text-xs text-indigo-200">Scheduled for tomorrow</span>
-              </li>
-              <li className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
-                <span className="font-medium text-white">Invoice INV-0156</span>
-                <span className="text-xs text-indigo-200">Payment received</span>
-              </li>
+            <ul className="space-y-3 text-sm text-indigo-100 min-h-[180px]">
+              {displayedInvoices.map((invoice) => {
+                const isExiting = exitingIds.has(invoice.id);
+                const isEntering = enteringIds.has(invoice.id);
+                
+                return (
+                  <li
+                    key={invoice.id}
+                    className={`flex items-center justify-between rounded-xl bg-white/5 px-4 py-3 ${
+                      isExiting ? 'animate-notification-exit' : isEntering ? 'animate-notification-enter' : ''
+                    }`}
+                  >
+                    <span className="font-medium text-white">{invoice.invoiceNumber}</span>
+                    <span className="text-xs text-indigo-200">{invoice.status}</span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>

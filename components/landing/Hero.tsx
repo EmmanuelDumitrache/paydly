@@ -21,7 +21,7 @@ export function Hero() {
           <div className="flex flex-wrap items-center gap-4">
             <Link
               href="/signup"
-              className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg transition hover:bg-indigo-100"
+              className="relative rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg transition hover:bg-indigo-100 animate-glow"
             >
               Start 14-day free trial
             </Link>

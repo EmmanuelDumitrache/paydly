@@ -65,7 +65,7 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden bg-slate-900 py-24 text-white" id="hero">
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/40 via-transparent to-slate-900" />
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/30 via-slate-900/0 to-slate-900 bg-[length:200%_200%] animate-gradient-move" />
         <div className="absolute -bottom-48 right-0 h-96 w-96 rounded-full bg-indigo-500/30 blur-3xl" />
       </div>
       <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-16 px-4 sm:px-6 lg:flex-row lg:items-center lg:gap-24 lg:px-8">
@@ -74,7 +74,7 @@ export function Hero() {
             Get paid faster
           </span>
           <h1 className="relative text-4xl font-semibold leading-tight sm:text-5xl">
-            <span className="relative inline-block bg-gradient-to-r from-white via-white to-white/80 bg-[length:200%_100%] bg-clip-text text-transparent animate-light-sweep">
+            <span className="relative inline-block bg-gradient-to-r from-white/40 via-white to-white/40 bg-[length:300%_100%] bg-clip-text text-transparent animate-light-sweep">
               Stop chasing late payments. Get paid 40% faster with Paydly.
             </span>
           </h1>

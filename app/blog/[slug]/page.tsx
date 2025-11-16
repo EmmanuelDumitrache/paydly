@@ -156,6 +156,29 @@ function parseMarkdown(content: string): React.ReactNode {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
+    // Check for images: ![alt text](image-url)
+    const imageRegex = /^!\[([^\]]*)\]\(([^)]+)\)$/;
+    const imageMatch = line.match(imageRegex);
+    if (imageMatch) {
+      flushList();
+      flushParagraph();
+      const altText = imageMatch[1];
+      const imageUrl = imageMatch[2];
+      elements.push(
+        <div key={`img-${keyCounter++}`} className="my-8">
+          <img
+            src={imageUrl}
+            alt={altText}
+            className="w-full rounded-xl shadow-lg"
+          />
+          {altText && (
+            <p className="mt-2 text-center text-sm text-slate-500">{altText}</p>
+          )}
+        </div>
+      );
+      continue;
+    }
+
     if (line.startsWith('# ')) {
       flushList();
       flushParagraph();

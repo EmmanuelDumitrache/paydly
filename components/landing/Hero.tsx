@@ -74,9 +74,8 @@ export function Hero() {
             Get paid faster
           </span>
           <h1 className="relative text-4xl font-semibold leading-tight sm:text-5xl">
-            <span className="relative inline-block">
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent bg-[length:200%_100%] animate-light-sweep" />
-              <span className="relative">Stop chasing late payments. Get paid 40% faster with Paydly.</span>
+            <span className="relative inline-block bg-gradient-to-r from-white via-white to-white/80 bg-[length:200%_100%] bg-clip-text text-transparent animate-light-sweep">
+              Stop chasing late payments. Get paid 40% faster with Paydly.
             </span>
           </h1>
           <p className="max-w-xl text-lg text-indigo-100">

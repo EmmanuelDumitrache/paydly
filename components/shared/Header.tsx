@@ -28,9 +28,8 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-semibold text-slate-900">Paydly</span>
-          <span className="hidden text-xs font-medium uppercase tracking-wide text-indigo-600 sm:inline">
-            Get paid faster
+          <span className="text-2xl font-semibold bg-gradient-to-r from-slate-900 via-indigo-600 to-slate-900 bg-[length:300%_100%] bg-clip-text text-transparent animate-light-sweep">
+            Paydly
           </span>
         </Link>
         <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">

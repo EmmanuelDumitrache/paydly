@@ -18,6 +18,7 @@ const config: Config = {
         'notification-enter': 'notification-enter 0.5s ease-out forwards',
         'notification-exit': 'notification-exit 0.5s ease-in forwards',
         'gradient-move': 'gradient-move 8s ease-in-out infinite',
+        'gradient-drift': 'gradient-drift 12s ease-in-out infinite',
         'fade-up': 'fade-up 700ms ease-out forwards',
       },
       keyframes: {
@@ -45,6 +46,17 @@ const config: Config = {
           },
           '50%': {
             'background-position': '100% 50%',
+          },
+          '100%': {
+            'background-position': '0% 50%',
+          },
+        },
+        'gradient-drift': {
+          '0%': {
+            'background-position': '0% 50%',
+          },
+          '50%': {
+            'background-position': '40% 50%',
           },
           '100%': {
             'background-position': '0% 50%',

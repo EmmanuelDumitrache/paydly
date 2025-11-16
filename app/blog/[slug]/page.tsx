@@ -92,25 +92,29 @@ function parseMarkdown(content: string): React.ReactNode {
     // Find all links
     linkRegex.lastIndex = 0;
     let match;
-    while ((match = linkRegex.exec(text)) !== null) && match.index !== undefined) {
-      allMatches.push({
-        index: match.index,
-        length: match[0].length,
-        type: 'link',
-        content: match[1],
-        href: match[2],
-      });
+    while ((match = linkRegex.exec(text)) !== null) {
+      if (match.index !== undefined) {
+        allMatches.push({
+          index: match.index,
+          length: match[0].length,
+          type: 'link',
+          content: match[1],
+          href: match[2],
+        });
+      }
     }
 
     // Find all bold text
     boldRegex.lastIndex = 0;
-    while ((match = boldRegex.exec(text)) !== null && match.index !== undefined) {
-      allMatches.push({
-        index: match.index,
-        length: match[0].length,
-        type: 'bold',
-        content: match[1],
-      });
+    while ((match = boldRegex.exec(text)) !== null) {
+      if (match.index !== undefined) {
+        allMatches.push({
+          index: match.index,
+          length: match[0].length,
+          type: 'bold',
+          content: match[1],
+        });
+      }
     }
 
     // Sort by index

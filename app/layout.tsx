@@ -22,14 +22,68 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Paydly — Automate invoice reminders and get paid faster',
+  title: {
+    default: 'Paydly — Automate invoice reminders and get paid faster',
+    template: '%s • Paydly',
+  },
   description:
-    'Paydly connects to Xero and automatically chases overdue invoices with smart reminders so you can focus on billable work.',
-  metadataBase: new URL('https://paydly.com'),
+    'Automate invoice reminders from Xero. Paydly connects to your Xero account, tracks overdue invoices, and sends polite reminders at custom intervals. Get paid 40% faster with automated follow-ups.',
+  keywords: [
+    'invoice reminders',
+    'Xero automation',
+    'automate invoice follow-ups',
+    'get paid faster',
+    'accounts receivable automation',
+    'late payment reminders',
+    'invoice chasing software',
+    'Xero integration',
+    'automated invoice reminders',
+    'invoice payment automation',
+  ],
+  authors: [{ name: 'Paydly' }],
+  creator: 'Paydly',
+  publisher: 'Paydly',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://paydly.com'),
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
-    title: 'Paydly',
+    type: 'website',
+    locale: 'en_US',
+    url: '/',
+    siteName: 'Paydly',
+    title: 'Paydly — Automate invoice reminders and get paid faster',
     description:
-      'Get paid faster by automating invoice reminders. Connect Xero and let Paydly follow up at 7, 14, and 21 days overdue.',
+      'Automate invoice reminders from Xero. Connect your Xero account and let Paydly send polite reminders at custom intervals. Get paid 40% faster with automated follow-ups.',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Paydly - Automate invoice reminders',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Paydly — Automate invoice reminders and get paid faster',
+    description:
+      'Automate invoice reminders from Xero. Connect your Xero account and let Paydly send polite reminders at custom intervals.',
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: '6qHlmkaicGxHpBLlbRlB1eom-KuV3XSpEFuJs5Kw4o0',
   },
 };
 

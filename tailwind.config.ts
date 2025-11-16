@@ -14,7 +14,7 @@ const config: Config = {
       },
       animation: {
         glow: 'glow 2s ease-in-out infinite alternate',
-        'light-sweep': 'light-sweep 1.2s linear infinite',
+        'light-sweep': 'light-sweep 6s ease-in-out infinite',
         'notification-enter': 'notification-enter 0.5s ease-out forwards',
         'notification-exit': 'notification-exit 0.5s ease-in forwards',
         'gradient-move': 'gradient-move 8s ease-in-out infinite',

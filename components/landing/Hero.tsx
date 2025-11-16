@@ -75,11 +75,11 @@ export function Hero() {
           </span>
           <h1 className="relative text-4xl font-semibold leading-tight sm:text-5xl">
             <span className="relative inline-block bg-gradient-to-r from-white/40 via-white to-white/40 bg-[length:300%_100%] bg-clip-text text-transparent animate-light-sweep">
-              Stop chasing late payments. Get paid 40% faster with Paydly.
+              Stop chasing late payments.
             </span>
           </h1>
           <p className="max-w-xl text-lg text-indigo-100">
-            Paydly connects to your Xero account, tracks overdue invoices, and sends polite reminders at 7, 14, and 21 days overdue. Set it once and focus on billable work.
+            Paydly connects to your Xero account, tracks overdue invoices, and sends polite reminders at custom intervals. Set it once and focus on billable work.
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <Link

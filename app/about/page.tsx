@@ -1,4 +1,20 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'About Paydly — Automated Invoice Reminders for Small Businesses',
+  description:
+    'Paydly helps small businesses get paid faster by automatically sending friendly reminders to clients with overdue invoices. We integrate seamlessly with Xero to sync invoices and send timely reminders.',
+  openGraph: {
+    title: 'About Paydly — Automated Invoice Reminders',
+    description:
+      'Paydly helps small businesses get paid faster by automatically sending friendly reminders to clients with overdue invoices.',
+    url: '/about',
+  },
+  alternates: {
+    canonical: '/about',
+  },
+};
 
 export default function AboutPage() {
   return (

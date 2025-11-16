@@ -1,4 +1,23 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Terms of Service',
+  description:
+    'Paydly Terms of Service. Read our terms and conditions for using Paydly automated invoice reminder service.',
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: 'Terms of Service • Paydly',
+    description: 'Paydly Terms of Service. Read our terms and conditions for using Paydly.',
+    url: '/terms',
+  },
+  alternates: {
+    canonical: '/terms',
+  },
+};
 
 export default function TermsPage() {
   return (

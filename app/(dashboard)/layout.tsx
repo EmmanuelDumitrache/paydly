@@ -1,7 +1,15 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 export const dynamic = 'force-dynamic';
 
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 import { differenceInCalendarDays } from 'date-fns';
 import { SidebarNav } from '@/components/dashboard/SidebarNav';
 import { DashboardLayoutClient } from '@/components/dashboard/DashboardLayoutClient';

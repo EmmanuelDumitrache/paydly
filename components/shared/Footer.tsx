@@ -24,6 +24,12 @@ export function Footer() {
           <Link href="/about" className="transition hover:text-slate-900">
             About
           </Link>
+          <Link href="/blog" className="transition hover:text-slate-900">
+            Blog
+          </Link>
+          <Link href="/contact" className="transition hover:text-slate-900">
+            Contact
+          </Link>
           <Link href="/privacy" className="transition hover:text-slate-900">
             Privacy
           </Link>
@@ -31,23 +37,17 @@ export function Footer() {
             Terms
           </Link>
           <a
-            href="mailto:hello@paydly.com"
-            className="transition hover:text-slate-900"
-          >
-            Contact
-          </a>
-          <a
-            href="https://twitter.com"
+            href="https://twitter.com/paydly"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="transition hover:text-slate-900"
           >
             Twitter
           </a>
           <a
-            href="https://linkedin.com"
+            href="https://linkedin.com/company/paydly"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="transition hover:text-slate-900"
           >
             LinkedIn

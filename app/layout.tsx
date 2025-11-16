@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'Paydly' }],
   creator: 'Paydly',
   publisher: 'Paydly',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://paydly.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.paydly.io'),
   alternates: {
     canonical: '/',
   },

@@ -79,7 +79,7 @@ export function Hero() {
             </span>
           </h1>
           <p className="max-w-xl text-lg text-indigo-100">
-            Paydly connects to your Xero account, tracks overdue invoices, and sends polite reminders at custom intervals. Set it once and focus on billable work.
+            Automate invoice reminders from Xero at custom intervals. Reduce late payments and free up time.
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <Link

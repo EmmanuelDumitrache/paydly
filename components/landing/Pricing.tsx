@@ -1,25 +1,22 @@
 import Link from 'next/link';
 
 const FEATURES = [
-  'Unlimited invoices and reminders',
-  'Xero integration included',
-  'Daily reminder automation at 7 / 14 / 21 days',
-  'Email support from real humans',
-  'Cancel anytime during the trial',
+  'Automated invoice reminders',
+  'Deep Xero integration',
+  'Custom reminder intervals',
+  'High deliverability email sending',
+  'Pause per client or globally',
+  'Clear reminder history and audit trail',
 ];
 
 export function Pricing() {
   return (
     <section id="pricing" className="bg-white py-20">
       <div className="mx-auto w-full max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-        <span className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
-          Simple pricing
-        </span>
-        <h2 className="mt-3 text-3xl font-semibold text-slate-900 sm:text-4xl">
-          $29/month. Flat. Unlimited.
-        </h2>
+        <span className="text-sm font-semibold uppercase tracking-wide text-indigo-600">Simple pricing</span>
+        <h2 className="mt-3 text-3xl font-semibold text-slate-900 sm:text-4xl">$29/month. Flat. Unlimited.</h2>
         <p className="mt-4 text-base text-slate-600">
-          Start with a 14-day free trial. No card required. Keep Paydly running for $29/month once you see faster payments.
+          Start free for 14 days. Automate payment follow-ups from Xero in minutes—no credit card required.
         </p>
 
         <div className="mt-12 rounded-3xl border border-slate-200 bg-slate-50 p-10 text-left shadow-lg">
@@ -33,7 +30,7 @@ export function Pricing() {
             </div>
             <Link
               href="/signup"
-              className="rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+              className="rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 animate-glow-soft"
             >
               Start free trial
             </Link>

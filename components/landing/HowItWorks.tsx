@@ -7,13 +7,13 @@ const STEPS = [
     icon: Link2,
   },
   {
-    title: 'We track overdue invoices automatically',
-    description: 'Every day we pull overdue invoices and determine who needs a gentle nudge, no spreadsheets required.',
+    title: 'Choose your reminder timings',
+    description: 'Set custom intervals that fit your workflow—weekly, bi‑weekly, or your own schedule.',
     icon: RefreshCcw,
   },
   {
-    title: 'Reminders go out at 7, 14, 21 days',
-    description: 'Clients receive polite reminders with invoice details, and you see when each follow-up was sent.',
+    title: 'Paydly sends polite follow-ups',
+    description: 'We email polite invoice reminders automatically until paid, and log a clear history for you.',
     icon: MailCheck,
   },
 ];

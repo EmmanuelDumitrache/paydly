@@ -14,6 +14,7 @@ const config: Config = {
       },
       animation: {
         glow: 'glow 2s ease-in-out infinite alternate',
+        'glow-soft': 'glow-soft 2.5s ease-in-out infinite alternate',
         'light-sweep': 'light-sweep 6s ease-in-out infinite',
         'notification-enter': 'notification-enter 0.5s ease-out forwards',
         'notification-exit': 'notification-exit 0.5s ease-in forwards',
@@ -22,6 +23,16 @@ const config: Config = {
         'fade-up': 'fade-up 700ms ease-out forwards',
       },
       keyframes: {
+        'glow-soft': {
+          '0%': {
+            'box-shadow':
+              '0 0 4px rgba(255,255,255,0.25), 0 0 8px rgba(99,102,241,0.20), 0 0 12px rgba(99,102,241,0.15)',
+          },
+          '100%': {
+            'box-shadow':
+              '0 0 6px rgba(255,255,255,0.35), 0 0 12px rgba(99,102,241,0.25), 0 0 18px rgba(99,102,241,0.20)',
+          },
+        },
         glow: {
           '0%': {
             'box-shadow':

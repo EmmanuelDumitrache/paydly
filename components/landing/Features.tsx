@@ -1,27 +1,27 @@
 const FEATURES = [
   {
-    title: 'Automatic Xero sync',
-    description: 'Invoices update in real-time so you always know who owes you money.',
+    title: 'Xero integration',
+    description: 'Syncs unpaid invoices automatically so you always know who owes you.',
   },
   {
-    title: 'Smart reminders',
-    description: 'Polite 7-day nudges, firmer 21-day notices, all personalised for your business.',
+    title: 'Automated invoice reminders',
+    description: 'Polite follow-ups sent for you—timed to your workflow until paid.',
   },
   {
     title: 'Pause anytime',
     description: 'Stop reminders for specific clients or invoices with one click.',
   },
   {
-    title: 'Track everything',
-    description: 'See who pays late, when reminders were sent, and what’s scheduled next.',
+    title: 'Reminder history',
+    description: 'Clear audit trail of what was sent and what’s scheduled next.',
   },
   {
-    title: 'Set & forget',
-    description: 'Runs in the background every day at 00:00 UTC—no workflow changes required.',
+    title: 'Custom intervals',
+    description: 'Choose weekly, bi‑weekly, or your own schedule—no cron jobs.',
   },
   {
-    title: 'Unlimited invoices',
-    description: 'Send as many reminders as you need. No charge per client or message.',
+    title: 'High deliverability',
+    description: 'Optimized sending to help messages land and get paid faster.',
   },
 ];
 

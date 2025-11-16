@@ -49,7 +49,7 @@ export function Header() {
           <Link
             href="/signup"
             className={clsx(
-              'rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500'
+              'rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 animate-glow-soft'
             )}
           >
             Start free trial

@@ -4,14 +4,14 @@ export function CTA() {
   return (
     <section className="bg-indigo-600 py-20 text-white">
       <div className="mx-auto w-full max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-semibold sm:text-4xl">Never chase an invoice again.</h2>
+        <h2 className="text-3xl font-semibold sm:text-4xl">Automate invoice reminders from Xero.</h2>
         <p className="mt-4 text-base text-indigo-100">
-          Setup takes two minutes. Connect Xero, choose your reminder cadence, and let Paydly handle the rest.
+          Automate payment follow‑ups from Xero with custom intervals. Start in minutes—no credit card needed.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/signup"
-            className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-100"
+            className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-100 animate-glow-soft"
           >
             Start free trial
           </Link>

@@ -23,22 +23,18 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Paydly — Automate invoice reminders and get paid faster',
+    default: 'Paydly - Automated Invoice Reminders for Xero | Get Paid Faster',
     template: '%s • Paydly',
   },
   description:
-    'Automate invoice reminders from Xero. Paydly connects to your Xero account, tracks overdue invoices, and sends polite reminders at custom intervals. Get paid 40% faster with automated follow-ups.',
+    'Automate invoice reminders and get paid 40% faster. Seamlessly integrates with Xero. Stop chasing payments. Start free trial today.',
   keywords: [
-    'invoice reminders',
-    'Xero automation',
-    'automate invoice follow-ups',
+    'Xero invoice reminders',
+    'automated payment reminders',
     'get paid faster',
-    'accounts receivable automation',
-    'late payment reminders',
-    'invoice chasing software',
+    'invoice automation',
     'Xero integration',
-    'automated invoice reminders',
-    'invoice payment automation',
+    'overdue invoice reminders',
   ],
   authors: [{ name: 'Paydly' }],
   creator: 'Paydly',
@@ -47,17 +43,26 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/',
   },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: '/',
     siteName: 'Paydly',
-    title: 'Paydly — Automate invoice reminders and get paid faster',
+    title: 'Paydly - Automated Invoice Reminders for Xero',
     description:
-      'Automate invoice reminders from Xero. Connect your Xero account and let Paydly send polite reminders at custom intervals. Get paid 40% faster with automated follow-ups.',
+      'Stop chasing overdue invoices. Get paid 40% faster with automated reminders.',
     images: [
       {
-        url: '/og-image.png',
+        url: '/opengraph-image.png',
         width: 1200,
         height: 630,
         alt: 'Paydly - Automate invoice reminders',
@@ -69,7 +74,7 @@ export const metadata: Metadata = {
     title: 'Paydly — Automate invoice reminders and get paid faster',
     description:
       'Automate invoice reminders from Xero. Connect your Xero account and let Paydly send polite reminders at custom intervals.',
-    images: ['/og-image.png'],
+    images: ['/opengraph-image.png'],
   },
   robots: {
     index: true,

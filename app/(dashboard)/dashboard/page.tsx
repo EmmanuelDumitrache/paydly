@@ -1,10 +1,12 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
+import { Suspense } from 'react';
 import { differenceInCalendarDays, format } from 'date-fns';
 import Link from 'next/link';
 import { Clock, AlertCircle, ArrowRight } from 'lucide-react';
 
 import { Stats } from '@/components/dashboard/Stats';
 import { XeroConnect } from '@/components/dashboard/XeroConnect';
+import { SuccessToast } from '@/components/shared/SuccessToast';
 import { getDashboardData } from '@/lib/data/dashboard';
 import { createClient } from '@/lib/supabase/server';
 
@@ -49,6 +51,9 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
+      <Suspense fallback={null}>
+        <SuccessToast />
+      </Suspense>
       {xeroStatus === 'success' && xeroTenant ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-4 text-sm text-emerald-700">
           <div className="flex items-center gap-2">

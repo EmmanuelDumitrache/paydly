@@ -60,7 +60,7 @@ export function SignupForm() {
         .eq('id', userId);
     }
 
-    router.replace('/dashboard');
+    router.replace(`/check-email?email=${encodeURIComponent(email)}`);
     router.refresh();
   };
 

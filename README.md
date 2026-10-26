@@ -85,7 +85,16 @@ Required variables:
 Apply the initial schema to your Supabase project:
 - In Supabase Dashboard: go to **SQL Editor** → run `supabase/migrations/001_initial_schema.sql`.
 
-### 3. Deploying to Vercel
+### 3. Deploying to Netlify / Vercel
+
+**Deploying to Netlify:**
+1. Go to [app.netlify.com](https://app.netlify.com/) → **Add new site** → **Import an existing project**.
+2. Connect your GitHub and select `EmmanuelDumitrache/paydly`.
+3. Netlify automatically detects Next.js via `netlify.toml` (Build command: `npm run build`, Publish directory: `.next`, Node 20).
+4. *(Optional)* Add your environment variables in **Site configuration → Environment variables** if connecting real Supabase & Xero accounts. (If left unset, it runs in Demo Mode).
+5. Click **Deploy site**!
+
+**Deploying to Vercel:**
 1. Import `EmmanuelDumitrache/paydly` in your Vercel Dashboard.
 2. Add your environment variables in **Project Settings → Environment Variables**.
 3. In your Xero Developer Portal, add your production callback URL:

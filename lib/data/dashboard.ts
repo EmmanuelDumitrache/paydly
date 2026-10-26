@@ -4,6 +4,7 @@ import { differenceInCalendarDays, format, formatISO, startOfMonth } from 'date-
 import type { DashboardStats, Invoice, Profile } from '@/types';
 import type { SupabaseServerClient } from '@/lib/supabase/server';
 import { alreadySentToday, nextReminderType, type ReminderSchedule } from '@/lib/reminders/utils';
+import { getMockDashboardData } from './mock';
 
 interface UpcomingReminder {
   id: string;
@@ -46,21 +47,8 @@ export async function getDashboardData(supabase: SupabaseServerClient): Promise<
   });
 
   if (!userId) {
-    console.log('[getDashboardData] No userId found, returning empty data');
-    return {
-      profile: null,
-      stats: {
-        total_overdue_invoices: 0,
-        total_overdue_amount: 0,
-        reminders_sent_this_month: 0,
-        average_days_to_payment: 0,
-        money_recovered_this_month: 0,
-      },
-      invoices: [],
-      upcomingReminders: [],
-      xeroConnected: false,
-      xeroTenantName: null,
-    };
+    console.log('[getDashboardData] No userId found, returning mock demo data');
+    return getMockDashboardData();
   }
 
   const today = new Date();

@@ -1,6 +1,7 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { differenceInCalendarDays } from 'date-fns';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { mockUpcomingReminders } from './mock';
 
 export interface UpcomingInvoice {
   id: string;
@@ -28,7 +29,18 @@ export async function fetchUpcomingInvoices(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { invoices: [], total: 0 };
+    const mockUpcoming: UpcomingInvoice[] = mockUpcomingReminders.map((r, idx) => ({
+      id: r.id,
+      invoice_number: r.invoiceNumber,
+      contact_name: r.clientName,
+      contact_email: 'accounts@client.com',
+      amount_due: 1450.00 + idx * 500,
+      currency_code: 'AUD',
+      due_date: new Date(Date.now() + 86400000 * (idx + 1)).toISOString().split('T')[0],
+      days_until_due: idx + 1,
+      status: 'AUTHORISED',
+    }));
+    return { invoices: mockUpcoming, total: mockUpcoming.length };
   }
 
   const today = new Date();

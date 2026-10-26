@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
+import Link from 'next/link';
 import { differenceInCalendarDays } from 'date-fns';
 import { SidebarNav } from '@/components/dashboard/SidebarNav';
 import { DashboardLayoutClient } from '@/components/dashboard/DashboardLayoutClient';
@@ -81,6 +82,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       console.error('[DashboardLayout] Unexpected error fetching profile:', error);
       // Continue with default values on error
     }
+  } else {
+    // Demo Mode defaults
+    xeroConnected = true;
+    xeroTenantName = 'Acme Digital Agency (Demo)';
+    subscriptionStatus = 'trialing';
+    reminderSendCount = 3;
+    trialEndsAt = new Date(Date.now() + 10 * 86400000).toISOString();
   }
 
   const trialLimit = TRIAL_REMINDER_LIMIT;
@@ -122,7 +130,15 @@ export default async function DashboardLayout({ children }: { children: ReactNod
               </form>
             </div>
           </aside>
-          <main className="flex-1 space-y-8">{children}</main>
+          <main className="flex-1 space-y-8">
+            {!user ? (
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50/80 px-4 py-2.5 text-xs text-indigo-700 flex items-center justify-between">
+                <span>⚡ <strong>Demo Mode:</strong> You are viewing interactive sample data. (To connect real Xero &amp; Supabase accounts, configure <code className="font-mono bg-indigo-100 px-1 rounded">.env.local</code>).</span>
+                <Link href="/" className="font-semibold underline hover:text-indigo-900 ml-2 whitespace-nowrap">Home</Link>
+              </div>
+            ) : null}
+            {children}
+          </main>
         </div>
       </DashboardLayoutClient>
     </div>

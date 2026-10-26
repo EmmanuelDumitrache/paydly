@@ -101,6 +101,13 @@ export default async function InvoicesPage({
     pageSize: PAGE_SIZE,
   });
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('xero_tenant_id')
+    .maybeSingle();
+
+  const hasXeroConnection = Boolean(profile?.xero_tenant_id);
+
   const params = new URLSearchParams();
   if (status && status !== 'all') params.set('status', status);
   if (search) params.set('search', search);
@@ -227,8 +234,15 @@ export default async function InvoicesPage({
               </>
             ) : (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-sm text-slate-500">
-                  No invoices yet. Connect Xero and sync to get started.
+                <td colSpan={7} className="px-6 py-12 text-center">
+                  <div className="py-12">
+                    <p className="text-slate-600 mb-4">No invoices found</p>
+                    <p className="text-sm text-slate-500">
+                      {!hasXeroConnection 
+                        ? "Connect Xero to sync your invoices" 
+                        : "Your invoices will appear here after syncing"}
+                    </p>
+                  </div>
                 </td>
               </tr>
             )}

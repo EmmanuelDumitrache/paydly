@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import { GlobalPauseToggle } from '@/components/settings/GlobalPauseToggle';
 import { CustomIntervals } from '@/components/settings/CustomIntervals';
 import { XeroErrorToast } from '@/components/settings/XeroErrorToast';
+import { SuccessToast } from '@/components/shared/SuccessToast';
 import { updateAccountProfile, updateReminderSchedule } from './actions';
 
 export default async function SettingsPage({
@@ -21,21 +22,40 @@ export default async function SettingsPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/login');
+  let profile: any = null;
+  let reminderSettings: any = null;
+
+  if (user) {
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+    profile = p;
+
+    const { data: rs } = await supabase
+      .from('reminder_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    reminderSettings = rs;
+  } else {
+    profile = {
+      id: 'demo-user',
+      email: 'demo@paydly.com',
+      full_name: 'Demo User',
+      company_name: 'Demo Agency Ltd',
+      xero_tenant_id: 'demo-tenant-id',
+      xero_tenant_name: 'Acme Digital Agency (Demo)',
+      subscription_status: 'trialing',
+      trial_ends_at: new Date(Date.now() + 10 * 86400000).toISOString(),
+    };
+    reminderSettings = {
+      reminders_globally_paused: false,
+      custom_intervals: { day_1: 7, day_2: 14, day_3: 21 },
+      updated_at: new Date().toISOString(),
+    };
   }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  const { data: reminderSettings } = await supabase
-    .from('reminder_settings')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle();
 
   const connectedToXero = Boolean(profile?.xero_tenant_id);
   const subscriptionStatus = profile?.subscription_status ?? 'trialing';
@@ -80,6 +100,7 @@ export default async function SettingsPage({
     <div className="space-y-8">
       <Suspense fallback={null}>
         <XeroErrorToast />
+        <SuccessToast />
       </Suspense>
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>

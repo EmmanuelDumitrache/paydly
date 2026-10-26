@@ -69,7 +69,7 @@ async function main() {
     throw new Error('Missing required environment variables');
   }
 
-  const supabase = createClient('https://xsvuqporgkddggmkasgh.supabase.co', serviceKey, {
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co', serviceKey, {
     auth: { persistSession: false },
   });
 

@@ -2,6 +2,7 @@
 import { differenceInCalendarDays, formatISO } from 'date-fns';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Invoice } from '@/types';
+import { mockInvoices } from './mock';
 
 function parseCurrency(value: string | number | null | undefined) {
   if (value === null || value === undefined) return 0;
@@ -24,7 +25,12 @@ export async function fetchOverdueInvoices(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { invoices: [], total: 0 };
+    const overdue = mockInvoices.filter((i) => i.days_overdue > 0);
+    const startIndex = (page - 1) * pageSize;
+    return {
+      invoices: overdue.slice(startIndex, startIndex + pageSize),
+      total: overdue.length,
+    };
   }
 
   const today = new Date();

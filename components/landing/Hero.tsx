@@ -73,26 +73,26 @@ export function Hero() {
           <span className="inline-flex items-center rounded-full bg-indigo-500/20 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-200">
             Get paid faster
           </span>
-          <h1 className="relative text-4xl font-semibold leading-tight sm:text-5xl">
+          <h1 className="relative text-4xl font-semibold leading-tight sm:text-5xl md:text-6xl">
             <span className="relative inline-block bg-gradient-to-r from-white/40 via-white to-white/40 bg-[length:300%_100%] bg-clip-text text-transparent animate-light-sweep">
-              Stop chasing late payments.
+              Automated Invoice Reminders for Xero
             </span>
           </h1>
-          <p className="max-w-xl text-lg text-indigo-100">
-            Automate invoice reminders from Xero at custom intervals. Reduce late payments and free up time.
+          <p className="max-w-xl text-lg text-indigo-100 md:text-xl md:text-2xl">
+            Stop chasing overdue invoices. Paydly automatically reminds your clients and gets you paid 40% faster.
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <Link
-              href="/signup"
+              href="/dashboard"
               className="relative rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg transition hover:bg-indigo-100 animate-glow"
             >
-              Start 14-day free trial
+              Explore Live Demo →
             </Link>
             <Link
-              href="#how-it-works"
+              href="/signup"
               className="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
             >
-              See how it works
+              Start 14-day free trial
             </Link>
           </div>
           <div className="flex flex-wrap gap-6 text-sm text-indigo-100">

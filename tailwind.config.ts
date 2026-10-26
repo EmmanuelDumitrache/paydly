@@ -90,7 +90,7 @@ const config: Config = {
           },
           '100%': {
             opacity: '0',
-            transform: 'translateY(-10px)',
+            transform: 'translateY(10px)',
           },
         },
         'fade-up': {

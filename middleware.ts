@@ -10,8 +10,13 @@ const ALLOWED_FOR_EXPIRED = ['/billing', '/settings', '/auth/signout'];
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // In demo mode or if Supabase is not configured, allow browsing demo dashboard
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('demo')) {
+    return response;
+  }
   
   const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {

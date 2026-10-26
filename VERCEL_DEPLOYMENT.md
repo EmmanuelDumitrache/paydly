@@ -28,13 +28,13 @@ Click **"Environment Variables"** and add each of these:
 
 ```bash
 # Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://xsvuqporgkddggmkasgh.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzdnVxcG9yZ2tkZGdnbWthc2doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0Nzk4NjIsImV4cCI6MjA3ODA1NTg2Mn0.y9PolcIpMzzllw-pN7AQI5v5J3Fd24LInRbsWCcdk34
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzdnVxcG9yZ2tkZGdnbWthc2doIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjQ3OTg2MiwiZXhwIjoyMDc4MDU1ODYyfQ._OZKclzlKHCm4Ka-CnBmjQmBz0zNloRFFfM3DtR8hFk
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Xero OAuth
-XERO_CLIENT_ID=12EF2070063F4194838337701C78E4A0
-XERO_CLIENT_SECRET=DaIBVTZhqVsRfRpC2wAgh68lUVcTQHYj4mGLsBDbrrm2A_G5
+XERO_CLIENT_ID=your_xero_client_id
+XERO_CLIENT_SECRET=your_xero_client_secret
 
 # App URLs (CHANGE TO YOUR PRODUCTION DOMAIN)
 NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
@@ -113,7 +113,7 @@ STRIPE_WEBHOOK_SECRET=
 - See all API calls, errors, and cron job executions
 
 ### Supabase Logs
-- https://xsvuqporgkddggmkasgh.supabase.co → **Logs**
+- https://app.supabase.com/project/_/logs → **Logs**
 - Monitor database queries, RLS policy checks, errors
 
 ### Resend Dashboard

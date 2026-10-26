@@ -55,7 +55,7 @@ Before starting tests, verify:
 ### Steps:
 
 1. **Get Invoice ID**
-   - Go to Supabase dashboard: https://xsvuqporgkddggmkasgh.supabase.co
+   - Go to Supabase dashboard: https://app.supabase.com
    - Go to Table Editor → `invoices` table
    - Copy any invoice's `id` (UUID format)
    - Example: `550e8400-e29b-41d4-a716-446655440000`
@@ -253,6 +253,6 @@ Once deployed to production:
 Check these resources:
 - Xero API Docs: https://developer.xero.com/documentation/api/accounting/invoices
 - Resend Docs: https://resend.com/docs
-- Supabase Logs: https://xsvuqporgkddggmkasgh.supabase.co → Logs
+- Supabase Logs: https://app.supabase.com/project/_/logs → Logs
 - Vercel Logs: Dashboard → Your Project → Logs
 

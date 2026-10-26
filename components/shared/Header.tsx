@@ -41,6 +41,13 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-3">
           <Link
+            href="/dashboard"
+            className="rounded-full border border-slate-300 px-3.5 py-1.5 text-xs sm:text-sm font-medium text-slate-700 transition hover:border-indigo-500 hover:text-indigo-600 inline-flex items-center gap-1.5"
+          >
+            <span>Live Demo</span>
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          </Link>
+          <Link
             href="/login"
             className="hidden rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-indigo-500 hover:text-indigo-600 md:inline-flex"
           >

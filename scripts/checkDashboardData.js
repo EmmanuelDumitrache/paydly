@@ -27,7 +27,7 @@ async function main() {
   const userId = process.env.USER_ID;
   if (!serviceKey || !userId) throw new Error('Missing env vars');
 
-  const supabase = createClient('https://xsvuqporgkddggmkasgh.supabase.co', serviceKey, { auth: { persistSession: false } });
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co', serviceKey, { auth: { persistSession: false } });
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

@@ -226,7 +226,7 @@ After validating with real customers, consider:
 
 - **Xero API Docs**: https://developer.xero.com/documentation/api/accounting/invoices
 - **Resend Docs**: https://resend.com/docs
-- **Supabase Dashboard**: https://xsvuqporgkddggmkasgh.supabase.co
+- **Supabase Dashboard**: https://app.supabase.com
 - **Vercel Dashboard**: https://vercel.com/dashboard
 
 ---

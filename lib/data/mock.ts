@@ -151,7 +151,8 @@ export function getMockDashboardData() {
     stats: mockStats,
     invoices: mockInvoices,
     upcomingReminders: mockUpcomingReminders,
-    xeroConnected: false,
+    xeroConnected: true,
+    xeroTenantName: 'Acme Digital Agency (Demo)',
   };
 }
 

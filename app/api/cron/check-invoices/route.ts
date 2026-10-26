@@ -42,11 +42,23 @@ export async function GET(request: Request) {
   const cronRunId = cronRun.id;
   console.log('[Cron] Started cron run:', cronRunId);
 
-  const { data: users, error: usersError } = await supabase
+  const { data: allUsers, error: usersError } = await supabase
     .from('profiles')
-    .select('id,email,company_name,subscription_status,reminder_send_count,xero_tenant_id,xero_access_token,xero_refresh_token,xero_token_expires_at')
+    .select('id,email,company_name,subscription_status,trial_ends_at,reminder_send_count,xero_tenant_id,xero_access_token,xero_refresh_token,xero_token_expires_at')
     .in('subscription_status', ['trialing', 'active'])
     .not('xero_tenant_id', 'is', null);
+
+  // Filter out expired trials
+  const users = allUsers?.filter(user => {
+    if (user.subscription_status === 'active') return true;
+    if (user.subscription_status === 'trialing') {
+      if (!user.trial_ends_at) return false;
+      return new Date(user.trial_ends_at) > new Date();
+    }
+    return false;
+  }) || [];
+
+  console.log(`[Cron] Processing ${users.length} active users (filtered from ${allUsers?.length || 0} total)`);
 
   if (usersError) {
     // Log failure

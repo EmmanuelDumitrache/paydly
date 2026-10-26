@@ -149,7 +149,7 @@ After deployment:
 
 **Tools:**
 - Vercel Dashboard: https://vercel.com/dashboard → Your Project → Logs
-- Supabase Logs: https://xsvuqporgkddggmkasgh.supabase.co → Logs
+- Supabase Logs: https://app.supabase.com/project/_/logs → Logs
 - Resend Dashboard: https://resend.com/emails
 
 ---

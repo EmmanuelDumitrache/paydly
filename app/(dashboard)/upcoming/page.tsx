@@ -32,6 +32,13 @@ export default async function UpcomingPage({
     pageSize: PAGE_SIZE,
   });
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('xero_tenant_id')
+    .maybeSingle();
+
+  const hasXeroConnection = Boolean(profile?.xero_tenant_id);
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const params = new URLSearchParams();
 
@@ -112,8 +119,15 @@ export default async function UpcomingPage({
                 </>
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">
-                    No upcoming invoices yet. Connect Xero above and click &apos;Sync now&apos; to get started.
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <div className="py-12">
+                      <p className="text-slate-600 mb-4">No upcoming invoices found</p>
+                      <p className="text-sm text-slate-500">
+                        {!hasXeroConnection 
+                          ? "Connect Xero to sync your invoices" 
+                          : "Your invoices will appear here after syncing"}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               )}

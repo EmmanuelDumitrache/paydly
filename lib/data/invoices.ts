@@ -3,6 +3,7 @@ import { differenceInCalendarDays, formatISO } from 'date-fns';
 
 import type { SupabaseServerClient } from '@/lib/supabase/server';
 import type { Invoice } from '@/types';
+import { mockInvoices } from './mock';
 
 export type InvoiceStatusFilter = 'all' | 'overdue' | 'paid';
 
@@ -34,6 +35,25 @@ export async function fetchInvoices(
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
   const today = formatISO(new Date(), { representation: 'date' });
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('demo')) {
+    let filtered = [...mockInvoices];
+    if (status === 'overdue') {
+      filtered = filtered.filter((i) => i.days_overdue > 0 && i.status !== 'PAID');
+    } else if (status === 'paid') {
+      filtered = filtered.filter((i) => i.status === 'PAID');
+    }
+    if (search) {
+      const term = search.toLowerCase();
+      filtered = filtered.filter(
+        (i) => i.invoice_number.toLowerCase().includes(term) || i.contact_name.toLowerCase().includes(term)
+      );
+    }
+    return {
+      invoices: filtered.slice(from, to + 1),
+      total: filtered.length,
+    };
+  }
 
   console.log('[fetchInvoices] Query params:', { status, search, page, pageSize, today });
 

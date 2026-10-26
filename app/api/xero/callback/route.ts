@@ -1,9 +1,11 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { cookies } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 
 import { exchangeCodeForTokens, fetchConnections } from '@/lib/xero/client';
 import { createClient } from '@/lib/supabase/server';
+import { syncXeroInvoicesForUser } from '@/lib/xero/sync';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -166,8 +168,40 @@ export async function GET(request: Request) {
       throw updateError;
     }
 
+    // Automatically sync invoices after successful Xero connection
+    let syncResult = null;
+    try {
+      console.log('[Xero Callback] Starting automatic invoice sync for user:', user.id);
+      syncResult = await syncXeroInvoicesForUser(supabase, user.id);
+      console.log('[Xero Callback] Invoice sync completed:', {
+        synced: syncResult.synced,
+        newInvoices: syncResult.newInvoices,
+        updatedInvoices: syncResult.updatedInvoices,
+      });
+
+      // Revalidate pages so invoices appear immediately
+      revalidatePath('/dashboard');
+      revalidatePath('/overdue');
+      revalidatePath('/upcoming');
+      revalidatePath('/invoices');
+    } catch (syncError) {
+      // Log error but don't fail the connection flow
+      // User can manually sync later if needed
+      console.error('[Xero Callback] Invoice sync failed (connection still successful):', syncError);
+    }
+
     const tenantName = encodeURIComponent(tenant.tenantName || 'Xero');
-    const response = NextResponse.redirect(`${origin}/dashboard?xero=success&tenant=${tenantName}`);
+    let redirectUrl = `${origin}/dashboard?xero=success&tenant=${tenantName}`;
+    
+    // Add sync result to URL for user feedback
+    if (syncResult) {
+      redirectUrl += `&synced=${syncResult.synced}`;
+      if (syncResult.newInvoices > 0) {
+        redirectUrl += `&new=${syncResult.newInvoices}`;
+      }
+    }
+
+    const response = NextResponse.redirect(redirectUrl);
     response.cookies.set('xero_oauth_state', '', {
       path: '/',
       maxAge: 0,

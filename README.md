@@ -1,109 +1,108 @@
 # Paydly
 
-> Automate invoice reminders for freelancers and small service businesses. Connect Xero once and Paydly sends polite nudges at 7/14/21 days overdue so you get paid faster.
+> Automated invoice reminders for freelancers and small service businesses. Connect Xero once and Paydly sends polite nudges at 7, 14, and 21 days overdue so you get paid faster.
+
+## 🚀 Quick Start (Demo Mode)
+
+The app includes an **interactive demo mode with mock data** so you can run and evaluate the full user experience locally without setting up external accounts (Supabase, Xero, Resend, or Stripe):
+
+```bash
+# 1. Clone repository
+git clone https://github.com/EmmanuelDumitrache/paydly.git
+cd paydly
+
+# 2. Install dependencies
+npm install
+
+# 3. Start development server
+npm run dev
+```
+
+Visit [`http://localhost:3000`](http://localhost:3000) to see the landing page, or click **"Live Demo"** in the navigation header / **"Explore Live Demo"** on the hero to access the interactive dashboard, invoices list, and settings.
+
+---
 
 ## Tech Stack
 
-- Next.js 14 (App Router) + TypeScript
-- Tailwind CSS for styling
-- Supabase (PostgreSQL + Auth)
-- Xero API (OAuth 2.0) for invoice sync
-- Resend for transactional email delivery
-- Stripe for subscriptions
-- Vercel for hosting, cron, and analytics
+- **Framework**: Next.js 14 (App Router, Server Components & Server Actions)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Database & Auth**: Supabase (PostgreSQL with Row-Level Security + Auth)
+- **Accounting Integration**: Xero API (OAuth 2.0 + automated token refresh)
+- **Email Delivery**: Resend (escalating 7/14/21-day transactional reminders)
+- **Subscriptions & Billing**: Stripe Checkout & Customer Portal
+- **Hosting & Automation**: Vercel (Edge Middleware + Vercel Cron)
 
-## Prerequisites
+---
 
-- Node.js 18+
-- npm (or pnpm/yarn/bun) and Git
-- Supabase project & CLI (for running migrations)
-- Xero developer account + connected test organisation
-- Resend account with verified sender domain
-- Stripe account with subscription product & price
+## Key Workflows & Architecture
 
-Refer to `docs/environment.md` for the full list of required environment variables.
+- **Interactive Dashboard (`/dashboard`)**
+  - Displays real-time summary cards: overdue invoice count, total overdue amount, reminders sent this month, and money recovered.
+  - Quick-action shortcuts to overdue invoices and scheduled upcoming reminders.
 
-## Local Setup
+- **Invoice Management (`/invoices`, `/overdue`, `/upcoming`)**
+  - Filter by status (All / Overdue / Paid) and search by invoice number or client name.
+  - Per-invoice reminder pause toggle if a client has requested a payment extension.
 
-```bash
-# install dependencies
-npm install
+- **Automated Reminder Cron (`/api/cron/check-invoices`)**
+  - Configured via `vercel.json` to execute daily.
+  - Scans active user accounts with connected Xero tenants, finds overdue invoices matching reminder thresholds (7, 14, or 21 days), renders personalized email templates, dispatches via Resend, and records entries in `reminder_logs` to prevent duplicate sends on the same day.
+  - Protected with Bearer token authentication (`CRON_SECRET`).
 
-# Create .env.local from template
-# Copy the environment variables from docs/environment.md to .env.local
-# At minimum, you need these Supabase credentials to start:
-# NEXT_PUBLIC_SUPABASE_URL=your_url
-# NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
-# SUPABASE_SERVICE_ROLE_KEY=your_service_key
+- **Xero OAuth 2.0 Integration (`/api/xero/*`)**
+  - `/api/xero/connect` initiates the OAuth flow with required scopes.
+  - `/api/xero/callback` exchanges authorization codes for access and refresh tokens, identifies the tenant, and triggers an initial automatic invoice sync.
+  - `/api/xero/sync` pulls unpaid invoices with status `AUTHORISED` and `AmountDue > 0`.
+  - Token refresh helpers automatically renew expired access tokens before API calls.
 
-# Apply database migration to Supabase
-# Option 1: Via Supabase Dashboard (recommended for first time)
-#   1. Go to https://app.supabase.com/project/_/sql/new
-#   2. Copy the contents of supabase/migrations/001_initial_schema.sql
-#   3. Paste and run the SQL
-#
-# Option 2: Via Supabase CLI
-#   npx supabase db push
+- **Settings & Preferences (`/settings`)**
+  - Custom reminder intervals: customize or toggle 7, 14, and 21-day triggers.
+  - Global pause switch: temporarily halt all automated reminders across all invoices.
 
-# start dev server
-npm run dev
-```
+---
 
-Visit `http://localhost:3000` to view the landing page.
+## Production / Live Setup (With Real Services)
 
-### 🚀 Quick Start (Without Supabase Setup)
+To connect your own live databases and third-party APIs:
 
-The app currently uses **mock data** for development, so you can run it immediately without setting up Supabase:
+### 1. Environment Configuration
+Copy `.env.example` to `.env.local` and configure your credentials:
 
 ```bash
-npm install
-npm run dev
+cp .env.example .env.local
 ```
 
-The landing page, dashboard, invoices page, and settings will all work with sample data. When you're ready to connect real data, follow the Supabase setup steps above.
+Required variables:
+- `NEXT_PUBLIC_SUPABASE_URL` & `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `XERO_CLIENT_ID` & `XERO_CLIENT_SECRET`
+- `RESEND_API_KEY` & `RESEND_FROM_EMAIL`
+- `CRON_SECRET`
+- `NEXT_PUBLIC_APP_URL`
 
-### After Database Setup
+### 2. Database Migration
+Apply the initial schema to your Supabase project:
+- In Supabase Dashboard: go to **SQL Editor** → run `supabase/migrations/001_initial_schema.sql`.
 
-Once you've applied the migration and configured `.env.local`, uncomment the real Supabase code in:
-- `app/(dashboard)/dashboard/page.tsx`
-- `lib/data/invoices.ts`
-- `app/(dashboard)/settings/page.tsx`
-- `app/(dashboard)/settings/actions.ts`
+### 3. Deploying to Vercel
+1. Import `EmmanuelDumitrache/paydly` in your Vercel Dashboard.
+2. Add your environment variables in **Project Settings → Environment Variables**.
+3. In your Xero Developer Portal, add your production callback URL:
+   `https://<your-project>.vercel.app/api/xero/callback`
+4. Deploy! Vercel automatically schedules the daily reminder cron specified in `vercel.json`.
 
-Look for comments marked `/* Real Supabase implementation - uncomment when database is ready */`
+---
 
 ## Available Scripts
 
-- `npm run dev` – local development
-- `npm run build` – production build
-- `npm run start` – start production server locally
-- `npm run lint` – run ESLint over the codebase
+- `npm run dev` — Run local development server
+- `npm run build` — Build production application
+- `npm run start` — Run production server locally
+- `npm run lint` — Run ESLint checks
 
-## Key Workflows
-
-- **Auth** – Supabase Auth handles email/password sign up and login. New accounts are placed on a 14-day trial automatically.
-- **Xero Integration** – `/api/xero/connect` launches OAuth, `/api/xero/callback` stores tokens, and `/api/xero/sync` upserts invoices. Tokens refresh automatically when expired.
-- **Reminders** – `/api/cron/check-invoices` (secured with `CRON_SECRET`) finds overdue invoices, renders the appropriate template, sends via Resend, logs history, and increments reminder counts.
-- **Billing** – Stripe Checkout (`/api/stripe/checkout`), billing portal (`/api/billing/portal`), and webhooks (`/api/stripe/webhook`) keep `profiles.subscription_status` in sync.
-
-## Deployment Checklist
-
-1. Create a Vercel project and link the repository.
-2. Add all environment variables (Supabase, Xero, Resend, Stripe, Cron secret) in Vercel settings.
-3. Upload the `vercel.json` cron configuration.
-4. Configure the Stripe webhook endpoint (`/api/stripe/webhook`) with the signing secret.
-5. Generate a Vercel cron token and set `CRON_SECRET` both locally and in Vercel.
-6. Deploy (`vercel --prod`) and verify:
-   - Supabase auth + dashboard access
-   - Xero connect, sync, and reminder scheduling
-   - Resend emails landing inboxes
-   - Stripe checkout and billing portal flows
-
-## Additional Documentation
-
-- `docs/environment.md` – environment variable reference
-- `docs/paydly-implementation-plan.md` – implementation roadmap and architecture summary (created separately)
+---
 
 ## License
 
-Proprietary – internal use for Paydly MVP development.
+MIT

@@ -1,5 +1,6 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { differenceInCalendarDays, format, formatISO, startOfMonth } from 'date-fns';
+import { cookies } from 'next/headers';
 
 import type { DashboardStats, Invoice, Profile } from '@/types';
 import type { SupabaseServerClient } from '@/lib/supabase/server';
@@ -31,6 +32,18 @@ function parseCurrency(value: string | number | null | undefined) {
 }
 
 export async function getDashboardData(supabase: SupabaseServerClient): Promise<DashboardData> {
+  let isDemo = false;
+  try {
+    isDemo = cookies().get('paydly_demo')?.value === 'true';
+  } catch {
+    // Ignore in non-request contexts
+  }
+
+  if (isDemo) {
+    console.log('[getDashboardData] Demo cookie detected, returning mock demo data');
+    return getMockDashboardData();
+  }
+
   const { data: profileRow } = await supabase
     .from('profiles')
     .select('*')

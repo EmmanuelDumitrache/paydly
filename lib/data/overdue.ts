@@ -1,5 +1,6 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { differenceInCalendarDays, formatISO } from 'date-fns';
+import { cookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Invoice } from '@/types';
 import { mockInvoices } from './mock';
@@ -24,7 +25,14 @@ export async function fetchOverdueInvoices(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  let isDemo = false;
+  try {
+    isDemo = cookies().get('paydly_demo')?.value === 'true';
+  } catch {
+    // Ignore
+  }
+
+  if (!user || isDemo) {
     const overdue = mockInvoices.filter((i) => i.days_overdue > 0);
     const startIndex = (page - 1) * pageSize;
     return {

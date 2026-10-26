@@ -13,8 +13,16 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  const isDemo =
+    request.nextUrl.searchParams.get('demo') === 'true' ||
+    request.cookies.get('paydly_demo')?.value === 'true';
+
+  if (request.nextUrl.searchParams.get('demo') === 'true') {
+    response.cookies.set('paydly_demo', 'true', { path: '/', maxAge: 86400 });
+  }
+
   // In demo mode or if Supabase is not configured, allow browsing demo dashboard
-  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('demo')) {
+  if (isDemo || !supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('demo')) {
     return response;
   }
   

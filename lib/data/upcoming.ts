@@ -1,5 +1,6 @@
 // @ts-nocheck - Supabase generic types cause issues with type inference
 import { differenceInCalendarDays } from 'date-fns';
+import { cookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { mockUpcomingReminders } from './mock';
 
@@ -28,7 +29,14 @@ export async function fetchUpcomingInvoices(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  let isDemo = false;
+  try {
+    isDemo = cookies().get('paydly_demo')?.value === 'true';
+  } catch {
+    // Ignore
+  }
+
+  if (!user || isDemo) {
     const mockUpcoming: UpcomingInvoice[] = mockUpcomingReminders.map((r, idx) => ({
       id: r.id,
       invoice_number: r.invoiceNumber,

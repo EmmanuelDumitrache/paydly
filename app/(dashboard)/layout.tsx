@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   },
 };
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { differenceInCalendarDays } from 'date-fns';
 import { SidebarNav } from '@/components/dashboard/SidebarNav';
 import { DashboardLayoutClient } from '@/components/dashboard/DashboardLayoutClient';
@@ -35,7 +36,14 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   let profile: any = null;
 
-  if (user) {
+  let isDemo = false;
+  try {
+    isDemo = cookies().get('paydly_demo')?.value === 'true';
+  } catch {
+    // Ignore
+  }
+
+  if (user && !isDemo) {
     try {
       // ⚠️ IMPORTANT: Use exact same query pattern as getDashboardData (lib/data/dashboard.ts)
       // DO NOT add .eq('id', user.id) - let RLS handle user filtering
@@ -131,7 +139,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             </div>
           </aside>
           <main className="flex-1 space-y-8">
-            {!user ? (
+            {!user || isDemo ? (
               <div className="rounded-xl border border-indigo-200 bg-indigo-50/80 px-4 py-2.5 text-xs text-indigo-700 flex items-center justify-between">
                 <span>⚡ <strong>Demo Mode:</strong> You are viewing interactive sample data. (To connect real Xero &amp; Supabase accounts, configure <code className="font-mono bg-indigo-100 px-1 rounded">.env.local</code>).</span>
                 <Link href="/" className="font-semibold underline hover:text-indigo-900 ml-2 whitespace-nowrap">Home</Link>

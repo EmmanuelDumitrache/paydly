@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/client';
@@ -163,6 +164,23 @@ export function LoginForm({ initialError }: { initialError?: string | null }) {
         </svg>
         Sign in with Google
       </button>
+
+      <div className="relative pt-2">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-slate-200" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-white px-2 font-medium text-slate-500">Recruiter &amp; Portfolio Demo</span>
+        </div>
+      </div>
+
+      <Link
+        href="/dashboard?demo=true"
+        className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-indigo-300 bg-indigo-50/70 px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-100 hover:border-indigo-400"
+      >
+        <span>⚡ Skip Login &amp; View Demo Dashboard</span>
+        <span aria-hidden="true">→</span>
+      </Link>
     </form>
   );
 }
